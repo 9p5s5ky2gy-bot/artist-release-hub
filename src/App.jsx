@@ -61,6 +61,37 @@ function isOrientationCompleted(orientation) {
   return ['feito', 'concluido', 'completed', 'done'].includes(status);
 }
 
+function hasRandomPlan(release, releaseTasks = []) {
+  return Boolean(
+    release?.planMode === 'random' ||
+      release?.randomPlanGeneratedAt ||
+      releaseTasks.some((task) => task.generatedPlan || task.templateId === 'random-plan'),
+  );
+}
+
+function releaseStrategyChanged(previousRelease, nextRelease) {
+  if (!previousRelease) return true;
+
+  const previousType = previousRelease.releaseType || previousRelease.type || 'Single';
+  const nextType = nextRelease.releaseType || nextRelease.type || 'Single';
+
+  return (
+    previousRelease.artistId !== nextRelease.artistId ||
+    previousRelease.releaseDate !== nextRelease.releaseDate ||
+    previousRelease.presaveDate !== nextRelease.presaveDate ||
+    previousType !== nextType ||
+    getDailyActionCount(previousRelease) !== getDailyActionCount(nextRelease)
+  );
+}
+
+function syncTasksWithReleaseMetadata(releaseTasks, release) {
+  return releaseTasks.map((task) => ({
+    ...task,
+    releaseId: release.id,
+    artistId: release.artistId,
+  }));
+}
+
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -238,6 +269,8 @@ export default function App() {
 
   function saveRelease(release) {
     const shouldGenerateRandomPlan = Boolean(release.shouldGenerateRandomPlan);
+    const existingRelease = releases.find((item) => item.id === release.id);
+    const existingTasksForRelease = tasks.filter((task) => task.releaseId === release.id);
     const normalized = normalizeRelease({
       ...release,
       songTitle: release.songTitle.trim(),
@@ -245,12 +278,21 @@ export default function App() {
       createdAt: release.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
-    const releaseToSave = shouldGenerateRandomPlan
+    const shouldKeepRandomPlan = !shouldGenerateRandomPlan && hasRandomPlan(normalized, existingTasksForRelease);
+    const shouldUseRandomPlan = shouldGenerateRandomPlan || shouldKeepRandomPlan;
+    const strategyChanged = shouldUseRandomPlan && releaseStrategyChanged(existingRelease, normalized);
+    const randomPlanSeed = shouldGenerateRandomPlan
+      ? Date.now()
+      : normalized.randomPlanSeed || existingRelease?.randomPlanSeed || Date.now();
+    const releaseToSave = shouldUseRandomPlan
       ? {
           ...normalized,
           planMode: 'random',
-          randomPlanSeed: Date.now(),
-          randomPlanGeneratedAt: new Date().toISOString(),
+          randomPlanSeed,
+          randomPlanGeneratedAt:
+            shouldGenerateRandomPlan || strategyChanged
+              ? new Date().toISOString()
+              : normalized.randomPlanGeneratedAt || existingRelease?.randomPlanGeneratedAt || new Date().toISOString(),
         }
       : normalized;
 
@@ -261,8 +303,15 @@ export default function App() {
     setTasks((current) => {
       const existingForRelease = current.filter((task) => task.releaseId === releaseToSave.id);
       const others = current.filter((task) => task.releaseId !== releaseToSave.id);
-      if (shouldGenerateRandomPlan) {
+      const hasRandomTasks = existingForRelease.some((task) => task.generatedPlan || task.templateId === 'random-plan');
+      const needsRandomRegeneration = shouldGenerateRandomPlan || strategyChanged || !hasRandomTasks;
+
+      if (shouldUseRandomPlan) {
         const artist = artists.find((item) => item.id === releaseToSave.artistId);
+        if (!needsRandomRegeneration) {
+          return sortByDate([...others, ...syncTasksWithReleaseMetadata(existingForRelease, releaseToSave)]);
+        }
+
         return sortByDate([
           ...others,
           ...generateRandomActionsForRelease(releaseToSave, artist, releaseToSave.randomPlanSeed),
@@ -271,7 +320,7 @@ export default function App() {
       return sortByDate([...others, ...generateTasksForRelease(releaseToSave, existingForRelease)]);
     });
 
-    if (shouldGenerateRandomPlan) {
+    if (shouldGenerateRandomPlan || strategyChanged) {
       setDayCompletions((current) => removeCompletionKeys(current, [releaseToSave.id]));
     }
   }
