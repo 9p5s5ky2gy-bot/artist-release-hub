@@ -1,4 +1,4 @@
-﻿import { CalendarCheck, Download, FileText, ListChecks } from 'lucide-react';
+import { CalendarCheck, Download, FileText, ListChecks } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import { PageHeader } from '../components/PageHeader';
@@ -14,6 +14,7 @@ export function TasksPage({
   onUpdateOrientation,
   onAddOrientation,
   onDeleteOrientation,
+  onRegenerateOrientation,
   onExportCsv,
 }) {
   const [filters, setFilters] = useState(emptyTaskFilters);
@@ -73,6 +74,7 @@ export function TasksPage({
               onUpdateOrientation={onUpdateOrientation}
               onAddOrientation={onAddOrientation}
               onDeleteOrientation={onDeleteOrientation}
+              onRegenerateOrientation={onRegenerateOrientation}
             />
           ))}
         </div>
