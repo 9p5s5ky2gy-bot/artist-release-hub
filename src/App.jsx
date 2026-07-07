@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AuthPage } from './components/AuthPage';
 import { CloudSetupPage } from './components/CloudSetupPage';
 import { Sidebar } from './components/Sidebar';
@@ -13,7 +13,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { hasWorkspaceData, loadWorkspace, normalizeWorkspace, saveWorkspace } from './lib/workspaceStore';
 import { buildPlanDays, generateTasksForRelease, getDayKey } from './utils/calendar';
-import { generateRandomActionsForRelease } from './utils/randomPlan';
+import { generateRandomActionForDay, generateRandomActionsForRelease } from './utils/randomPlan';
 import { getDailyActionCount } from './utils/release';
 import { exportTasksCsv } from './utils/csv';
 import { createDemoData } from './data/demoData';
@@ -50,6 +50,15 @@ function removeCompletionKeys(current, releaseIds) {
       return !releaseSet.has(releaseId);
     }),
   );
+}
+
+function isOrientationCompleted(orientation) {
+  const status = String(orientation?.status || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  return ['feito', 'concluido', 'completed', 'done'].includes(status);
 }
 
 export default function App() {
@@ -283,7 +292,17 @@ export default function App() {
   }
 
   function updateOrientation(orientationId, patch) {
-    setTasks((current) => current.map((task) => (task.id === orientationId ? { ...task, ...patch } : task)));
+    const marksManualEdit = ['title', 'description', 'type', 'priority', 'note', 'link'].some((field) =>
+      Object.prototype.hasOwnProperty.call(patch, field),
+    );
+
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === orientationId
+          ? { ...task, ...patch, manuallyEdited: marksManualEdit ? true : task.manuallyEdited }
+          : task,
+      ),
+    );
   }
 
   function addOrientation(day, title) {
@@ -314,6 +333,59 @@ export default function App() {
 
   function deleteOrientation(orientationId) {
     setTasks((current) => current.filter((task) => task.id !== orientationId));
+  }
+
+  function replaceOrientationWithRandom(day, orientation, slot) {
+    const release = releases.find((item) => item.id === day.releaseId) || day.release;
+    if (!release || !orientation?.id) return;
+
+    const artist = artists.find((item) => item.id === (orientation.artistId || release.artistId)) || day.artist;
+    const offset = typeof day.offset === 'number' ? day.offset : diffInDays(day.date, release.releaseDate);
+    const actionNumber = slot + 1;
+    const dayCompleted = Boolean(dayCompletions[getDayKey(release.id, day.date)] || day.completed);
+    const manualWarning = Boolean(orientation.manuallyEdited || orientation.templateId === 'custom' || !orientation.generatedPlan);
+    const completedWarning = dayCompleted || isOrientationCompleted(orientation);
+    const message = [
+      `Trocar somente a Ação ${actionNumber} deste dia?`,
+      'As outras ações do dia, outros dias, capa, links e checklist serão mantidos.',
+      completedWarning ? 'Este dia/ação está marcado como concluído. A conclusão será mantida, mas o texto da ação será substituído.' : '',
+      manualWarning ? 'Se você editou esta sugestão manualmente, o texto atual será perdido.' : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    if (!window.confirm(message)) return;
+
+    const seed = Date.now() + Math.floor(Math.random() * 100000);
+    const nextAction = generateRandomActionForDay({
+      release,
+      artist,
+      offset,
+      slot,
+      existingActions: day.orientations,
+      seed,
+    });
+
+    if (!nextAction) return;
+
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === orientation.id
+          ? {
+              ...task,
+              ...nextAction,
+              id: task.id,
+              date: task.date || nextAction.date,
+              offset: typeof task.offset === 'number' ? task.offset : nextAction.offset,
+              status: task.status || nextAction.status,
+              note: task.note || '',
+              generatedPlan: true,
+              templateId: 'random-plan',
+              manuallyEdited: false,
+            }
+          : task,
+      ),
+    );
   }
 
   function generateRandomPlanForRelease(releaseId) {
@@ -434,6 +506,7 @@ export default function App() {
     onUpdateOrientation: updateOrientation,
     onAddOrientation: addOrientation,
     onDeleteOrientation: deleteOrientation,
+    onRegenerateOrientation: replaceOrientationWithRandom,
   };
 
   const pages = {

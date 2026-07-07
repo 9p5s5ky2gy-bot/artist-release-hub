@@ -1,4 +1,4 @@
-﻿import { addDays, formatDateInput } from './date';
+import { addDays, formatDateInput } from './date';
 import { getDailyActionCount, getReleaseType } from './release';
 
 const MAX_RANDOM_PLAN_DAYS = 31;
@@ -87,6 +87,38 @@ const hooksByType = {
   'pós-lançamento': ['Mantenha a música viva', 'Mostre prova social', 'Reforce o link sem parecer repetitivo'],
 };
 
+const tipsByType = {
+  post: ['Use uma imagem forte e pouco texto.', 'Deixe a frase principal respirar no visual.'],
+  story: ['Use sticker de interação para puxar resposta.', 'Faça sequência curta, sem encher a tela.'],
+  reels: ['Corte o vídeo para prender nos 2 primeiros segundos.', 'Coloque legenda grande e clara.'],
+  TikTok: ['Entre direto no gancho, sem introdução longa.', 'Use o trecho mais reconhecível da música.'],
+  'pré-save': ['Deixe o link a um toque de distância.', 'Mostre o benefício do pré-save em linguagem simples.'],
+  bastidor: ['Mostre processo real, mesmo que simples.', 'Escolha um detalhe curioso e específico.'],
+  interação: ['Responda e reposte pessoas reais.', 'Faça o público sentir que participa da campanha.'],
+  lançamento: ['Use o link principal e uma chamada direta.', 'Peça uma ação clara: ouvir, salvar ou comentar.'],
+  'pós-lançamento': ['Mantenha a música viva com novos ângulos.', 'Transforme reação do público em novo conteúdo.'],
+};
+
+const metricsByType = {
+  post: 'salvamentos, comentários e compartilhamentos',
+  story: 'respostas, cliques no link e votos',
+  reels: 'retenção, compartilhamentos e uso do áudio',
+  TikTok: 'retenção, comentários e uso do áudio',
+  'pré-save': 'cliques no pré-save e respostas nos stories',
+  bastidor: 'respostas, comentários e tempo de visualização',
+  interação: 'DMs, marcações e reposts de fãs',
+  lançamento: 'cliques no link, streams e comentários',
+  'pós-lançamento': 'salvamentos, comentários e novos vídeos com o áudio',
+};
+
+const objectivesByPhase = {
+  prelaunch: 'abrir curiosidade e preparar a narrativa da era',
+  presave: 'converter atenção em pré-save e lembrete ativo',
+  finalWeek: 'aumentar urgência e deixar a data impossível de ignorar',
+  launchDay: 'levar o público para ouvir, salvar e comentar no lançamento',
+  postlaunch: 'manter a música viva e transformar reação em novos conteúdos',
+};
+
 function hashSeed(text) {
   return String(text)
     .split('')
@@ -150,9 +182,12 @@ function buildPool(phase, release, artist) {
 }
 
 function buildSmartSuggestion({ action, release, artist, phase, slot, random }) {
-  const [title, description, type] = action;
+  const [_title, description, type] = action;
   const typeHooks = hooksByType[type] || ['Faça uma entrega simples, clara e com chamada para ação'];
   const hook = pickFrom(typeHooks, random);
+  const tip = pickFrom(tipsByType[type] || ['Mantenha a ação simples, visual e fácil de executar.'], random);
+  const metric = metricsByType[type] || 'comentários, salvamentos e cliques';
+  const objective = objectivesByPhase[phase] || 'avançar a estratégia do lançamento';
   const artistContext = [artist?.genre, artist?.archetype, release?.notes]
     .filter(Boolean)
     .join(' · ');
@@ -165,9 +200,41 @@ function buildSmartSuggestion({ action, release, artist, phase, slot, random }) 
         ? 'CTA: fazer pré-save e ativar lembrete.'
         : 'CTA: responder, salvar a data ou acompanhar os próximos posts.';
 
-  return `Sugestão IA ${slot + 1}: ${description} ${contextLine}Formato: ${type}. Gancho: ${hook}. Momento: ${getPhaseLabel(phase)}. ${cta}`;
+  return `Sugestão IA ${slot + 1}: ${description} ${contextLine}Formato: ${type}. Gancho: ${hook}. Momento: ${getPhaseLabel(phase)}. ${cta} Dica curta: ${tip}. Objetivo: ${objective}. Métrica para observar: ${metric}.`;
 }
 
+export function generateRandomActionForDay({ release, artist, offset = 0, slot = 0, existingActions = [], seed = Date.now() }) {
+  if (!release?.id || !release?.releaseDate) return null;
+
+  const phase = getPhase(offset);
+  const pool = buildPool(phase, release, artist);
+  const usedTitles = new Set(
+    existingActions
+      .map((item) => (typeof item === 'string' ? item : item?.title))
+      .filter(Boolean),
+  );
+  const random = createRandom(hashSeed(`${release.id}-${release.releaseDate}-${offset}-${slot}-${seed}`));
+  const action = pickAction(pool, usedTitles, random);
+  const [title, _description, type, priority, linkField] = action;
+
+  return {
+    id: `${release.id}-random-${offset}-${slot + 1}-${seed}`,
+    templateId: 'random-plan',
+    generatedPlan: true,
+    releaseId: release.id,
+    artistId: release.artistId,
+    title,
+    description: buildSmartSuggestion({ action, release, artist, phase, slot, random }),
+    type,
+    date: formatDateInput(addDays(release.releaseDate, offset)),
+    status: 'não concluído',
+    priority,
+    note: '',
+    link: linkField ? release[linkField] || '' : '',
+    offset,
+    regeneratedAt: new Date().toISOString(),
+  };
+}
 export function generateRandomActionsForRelease(release, artist, seed = Date.now()) {
   if (!release?.id || !release?.releaseDate) return [];
 

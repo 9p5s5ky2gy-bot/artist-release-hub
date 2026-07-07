@@ -2326,6 +2326,28 @@ textarea:focus {
   gap: 8px;
 }
 
+.orientation-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.orientation-swap-button {
+  min-height: 34px;
+  border-color: rgba(101, 230, 173, 0.28);
+  background: rgba(101, 230, 173, 0.08);
+  color: var(--text);
+  font-size: 0.78rem;
+  padding: 0 10px;
+}
+
+.orientation-swap-button:hover {
+  border-color: rgba(101, 230, 173, 0.5);
+  background: rgba(101, 230, 173, 0.14);
+}
+
 .orientation-action-number {
   border: 1px solid rgba(101, 230, 173, 0.28);
   border-radius: 999px;
@@ -2426,6 +2448,16 @@ textarea:focus {
 
   .orientation-card-head {
     align-items: flex-start;
+  }
+
+  .orientation-card-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .orientation-swap-button {
+    flex: 1;
+    justify-content: center;
   }
 
   .orientation-suggestion-render {

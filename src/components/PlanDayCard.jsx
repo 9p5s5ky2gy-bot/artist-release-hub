@@ -1,4 +1,4 @@
-import { CheckCircle2, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { formatFullDate } from '../utils/date';
 import { getDailyActionCount, getReleaseCover } from '../utils/release';
@@ -26,13 +26,13 @@ function getTextareaRows(text, minRows = 3, charsPerLine = 44, maxRows = 18) {
 
 function getSuggestionLines(description) {
   return String(description || '')
-    .replace(/\s+(Formato:|Gancho:|Momento:|CTA:)/g, '\n$1')
+    .replace(/\s+(Formato:|Gancho:|Momento:|CTA:|Dica curta:|Objetivo:|Métrica para observar:)/g, '\n$1')
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
 }
 
-export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAddOrientation, onDeleteOrientation }) {
+export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAddOrientation, onDeleteOrientation, onRegenerateOrientation }) {
   const [newOrientation, setNewOrientation] = useState('');
   const cover = getReleaseCover(day.release);
   const isRandomPlan = day.release?.planMode === 'random' || day.orientations.some((item) => item.generatedPlan || item.templateId === 'random-plan');
@@ -104,14 +104,27 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
                       {orientation.type || `Ação ${index + 1}`}
                     </StatusBadge>
                   </div>
-                  <button
-                    className="icon-button orientation-remove"
-                    type="button"
-                    onClick={() => onDeleteOrientation(orientation.id)}
-                    aria-label="Remover orientação"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  <div className="orientation-card-actions">
+                    {isRandomPlan && onRegenerateOrientation && (
+                      <button
+                        className="secondary-button compact orientation-swap-button"
+                        type="button"
+                        onClick={() => onRegenerateOrientation(day, orientation, index)}
+                        title="Troca somente esta ação"
+                      >
+                        <RefreshCw size={14} />
+                        <span>Trocar sugestão</span>
+                      </button>
+                    )}
+                    <button
+                      className="icon-button orientation-remove"
+                      type="button"
+                      onClick={() => onDeleteOrientation(orientation.id)}
+                      aria-label="Remover orientação"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
 
                 <textarea
