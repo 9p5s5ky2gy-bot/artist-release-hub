@@ -105,7 +105,7 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
                     </StatusBadge>
                   </div>
                   <div className="orientation-card-actions">
-                    {isRandomPlan && onRegenerateOrientation && (
+                    {onRegenerateOrientation && day.release?.releaseDate && (
                       <button
                         className="secondary-button compact orientation-swap-button"
                         type="button"
