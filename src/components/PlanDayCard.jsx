@@ -1,4 +1,4 @@
-﻿import { CheckCircle2, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { formatFullDate } from '../utils/date';
 import { getDailyActionCount, getReleaseCover } from '../utils/release';
@@ -13,6 +13,23 @@ function phaseClassName(phase) {
     .replaceAll('é', 'e')
     .replaceAll('ó', 'o')
     .replaceAll(' ', '-');
+}
+
+function getTextareaRows(text, minRows = 3, charsPerLine = 44, maxRows = 18) {
+  const value = String(text || '');
+  const visualRows = value.split('\n').reduce((total, line) => {
+    return total + Math.max(1, Math.ceil(line.length / charsPerLine));
+  }, 0);
+
+  return Math.min(maxRows, Math.max(minRows, visualRows));
+}
+
+function getSuggestionLines(description) {
+  return String(description || '')
+    .replace(/\s+(Formato:|Gancho:|Momento:|CTA:)/g, '\n$1')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAddOrientation, onDeleteOrientation }) {
@@ -75,38 +92,59 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
         </div>
 
         <div className="orientation-list">
-          {day.orientations.map((orientation, index) => (
-            <div className="orientation-card" key={orientation.id}>
-              <div className="orientation-card-head">
-                <StatusBadge tone={orientation.priority === 'alta' ? 'red' : orientation.priority === 'média' ? 'yellow' : 'blue'}>
-                  {orientation.type || `Ação ${index + 1}`}
-                </StatusBadge>
-                <button
-                  className="icon-button orientation-remove"
-                  type="button"
-                  onClick={() => onDeleteOrientation(orientation.id)}
-                  aria-label="Remover orientação"
-                >
-                  <Trash2 size={15} />
-                </button>
+          {day.orientations.map((orientation, index) => {
+            const suggestionLines = getSuggestionLines(orientation.description);
+
+            return (
+              <div className="orientation-card" key={orientation.id}>
+                <div className="orientation-card-head">
+                  <div className="orientation-card-labels">
+                    <span className="orientation-action-number">Ação {index + 1}</span>
+                    <StatusBadge tone={orientation.priority === 'alta' ? 'red' : orientation.priority === 'média' ? 'yellow' : 'blue'}>
+                      {orientation.type || `Ação ${index + 1}`}
+                    </StatusBadge>
+                  </div>
+                  <button
+                    className="icon-button orientation-remove"
+                    type="button"
+                    onClick={() => onDeleteOrientation(orientation.id)}
+                    aria-label="Remover orientação"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+
+                <textarea
+                  className="orientation-title-input"
+                  value={orientation.title}
+                  onChange={(event) => onUpdateOrientation(orientation.id, { title: event.target.value })}
+                  rows={getTextareaRows(orientation.title, 2, 32, 5)}
+                  aria-label="Título da ação"
+                />
+
+                <div className="orientation-suggestion-render" aria-label="Sugestão IA renderizada">
+                  <span className="orientation-suggestion-kicker">Sugestão IA pronta para postar</span>
+                  {suggestionLines.length ? (
+                    suggestionLines.map((line) => <p key={line}>{line}</p>)
+                  ) : (
+                    <p>Adicione aqui o gancho, formato e chamada principal desta ação.</p>
+                  )}
+                </div>
+
+                <details className="orientation-edit-panel">
+                  <summary>Editar texto da sugestão</summary>
+                  <textarea
+                    className="orientation-description-input"
+                    value={orientation.description || ''}
+                    onChange={(event) => onUpdateOrientation(orientation.id, { description: event.target.value })}
+                    rows={getTextareaRows(orientation.description, 4, 44, 18)}
+                    placeholder="Sugestão do que postar, gancho, CTA ou observação"
+                    aria-label="Sugestão detalhada da ação"
+                  />
+                </details>
               </div>
-              <textarea
-                className="orientation-title-input"
-                value={orientation.title}
-                onChange={(event) => onUpdateOrientation(orientation.id, { title: event.target.value })}
-                rows="2"
-                aria-label="Título da ação"
-              />
-              <textarea
-                className="orientation-description-input"
-                value={orientation.description || ''}
-                onChange={(event) => onUpdateOrientation(orientation.id, { description: event.target.value })}
-                rows="4"
-                placeholder="Sugestão do que postar, gancho, CTA ou observação"
-                aria-label="Sugestão detalhada da ação"
-              />
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {canAddOrientation ? (
