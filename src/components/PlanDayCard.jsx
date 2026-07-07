@@ -125,7 +125,7 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
                 <div className="orientation-suggestion-render" aria-label="Sugestão IA renderizada">
                   <span className="orientation-suggestion-kicker">Sugestão IA pronta para postar</span>
                   {suggestionLines.length ? (
-                    suggestionLines.map((line) => <p key={line}>{line}</p>)
+                    suggestionLines.map((line, lineIndex) => <p key={orientation.id + '-' + lineIndex}>{line}</p>)
                   ) : (
                     <p>Adicione aqui o gancho, formato e chamada principal desta ação.</p>
                   )}
