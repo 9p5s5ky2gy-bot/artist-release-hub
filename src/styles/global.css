@@ -2047,3 +2047,254 @@ textarea:focus {
     padding: 18px;
   }
 }
+
+/* Release cover upload and random planning */
+.cover-column {
+  display: grid;
+  gap: 12px;
+}
+
+.selected-artist-name {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cover-uploader {
+  display: grid;
+  gap: 12px;
+}
+
+.cover-uploader .cover-preview .cover-image,
+.cover-uploader .cover-preview .cover-placeholder {
+  border: 1px solid var(--line);
+}
+
+.cover-uploader-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.upload-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 88px;
+  border: 1px dashed rgba(101, 230, 173, 0.34);
+  border-radius: var(--radius);
+  background: rgba(101, 230, 173, 0.06);
+  color: var(--text);
+  cursor: pointer;
+  padding: 12px;
+  text-align: center;
+}
+
+.upload-dropzone input {
+  display: none;
+}
+
+.cover-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.cover-hint svg,
+.checkbox-card-label svg {
+  flex: 0 0 auto;
+  color: var(--mint);
+}
+
+.checkbox-card-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  border: 1px solid rgba(101, 230, 173, 0.22);
+  border-radius: var(--radius);
+  background: rgba(101, 230, 173, 0.065);
+  color: var(--text);
+  cursor: pointer;
+  padding: 10px 12px;
+}
+
+.checkbox-card-label input {
+  width: 20px;
+  min-height: 20px;
+  accent-color: var(--mint);
+}
+
+.checkbox-card-label span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.release-card-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.release-progress-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.plan-day-release-strip {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 8px;
+}
+
+.plan-day-release-strip .cover-image,
+.plan-day-release-strip .cover-placeholder {
+  width: 58px;
+  height: 58px;
+}
+
+.plan-day-release-strip strong,
+.plan-day-release-strip span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-day-release-strip span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* Platform artist search */
+.platform-search-panel {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 14px;
+}
+
+.platform-search-panel .panel-heading {
+  margin-bottom: 0;
+}
+
+.platform-search-panel .panel-heading svg {
+  color: var(--mint);
+}
+
+.platform-search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.platform-search-message {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.external-search-link {
+  justify-self: start;
+}
+
+.platform-results {
+  display: grid;
+  gap: 10px;
+}
+
+.platform-result {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  background: rgba(9, 11, 15, 0.54);
+  padding: 10px;
+}
+
+.platform-result img,
+.platform-result-fallback,
+.artist-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius);
+  object-fit: cover;
+}
+
+.platform-result-fallback,
+.artist-avatar-fallback {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: rgba(101, 230, 173, 0.1);
+  color: var(--mint);
+  font-weight: 850;
+}
+
+.platform-result strong,
+.platform-result span,
+.platform-result small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.platform-result span,
+.platform-result small {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.artist-identity {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.artist-identity > div:last-child {
+  min-width: 0;
+}
+
+.artist-avatar {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 860px) {
+  .platform-search-form,
+  .platform-result,
+  .release-card-title-row {
+    grid-template-columns: 1fr;
+  }
+
+  .platform-result {
+    align-items: start;
+  }
+}
+
+.orientation-limit-note {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}

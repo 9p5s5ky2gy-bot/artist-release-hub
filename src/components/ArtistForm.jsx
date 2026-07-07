@@ -1,5 +1,6 @@
-import { Save, X } from 'lucide-react';
+﻿import { Save, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { PlatformArtistSearch } from './PlatformArtistSearch';
 
 const emptyArtist = {
   stageName: '',
@@ -8,6 +9,9 @@ const emptyArtist = {
   tiktok: '',
   youtube: '',
   spotify: '',
+  spotifyId: '',
+  profileImage: '',
+  platformProfiles: {},
   email: '',
   phone: '',
   notes: '',
@@ -16,16 +20,38 @@ const emptyArtist = {
   visualColors: '',
 };
 
+function normalizeArtist(artist) {
+  return {
+    ...emptyArtist,
+    ...(artist || {}),
+    platformProfiles: artist?.platformProfiles || {},
+  };
+}
+
 export function ArtistForm({ editingArtist, onSave, onCancel }) {
   const [form, setForm] = useState(emptyArtist);
 
   useEffect(() => {
-    setForm(editingArtist || emptyArtist);
+    setForm(normalizeArtist(editingArtist));
   }, [editingArtist]);
 
   function updateField(event) {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function selectPlatformArtist(artist) {
+    setForm((current) => ({
+      ...current,
+      stageName: artist.name || current.stageName,
+      spotify: artist.url || current.spotify,
+      spotifyId: artist.platformId || current.spotifyId,
+      profileImage: artist.image || current.profileImage,
+      platformProfiles: {
+        ...(current.platformProfiles || {}),
+        spotify: artist,
+      },
+    }));
   }
 
   function handleSubmit(event) {
@@ -48,6 +74,8 @@ export function ArtistForm({ editingArtist, onSave, onCancel }) {
           </button>
         )}
       </div>
+
+      <PlatformArtistSearch stageName={form.stageName} onSelect={selectPlatformArtist} />
 
       <div className="form-grid">
         <label>
@@ -73,6 +101,14 @@ export function ArtistForm({ editingArtist, onSave, onCancel }) {
         <label>
           Spotify
           <input name="spotify" value={form.spotify} onChange={updateField} placeholder="https://open.spotify.com/artist/..." />
+        </label>
+        <label>
+          ID do Spotify
+          <input name="spotifyId" value={form.spotifyId} onChange={updateField} placeholder="ID do artista no Spotify" />
+        </label>
+        <label>
+          Foto do perfil
+          <input name="profileImage" value={form.profileImage} onChange={updateField} placeholder="https://..." />
         </label>
         <label>
           E-mail

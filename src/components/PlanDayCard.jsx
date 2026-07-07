@@ -1,10 +1,15 @@
 ﻿import { CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { formatFullDate } from '../utils/date';
+import { getReleaseCover } from '../utils/release';
+import { CoverImage } from './CoverImage';
 import { StatusBadge } from './StatusBadge';
 
 export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAddOrientation, onDeleteOrientation }) {
   const [newOrientation, setNewOrientation] = useState('');
+  const cover = getReleaseCover(day.release);
+  const isRandomPlan = day.release?.planMode === 'random' || day.orientations.some((item) => item.generatedPlan || item.templateId === 'random-plan');
+  const canAddOrientation = !isRandomPlan || day.orientations.length === 0;
 
   function handleAdd(event) {
     event.preventDefault();
@@ -24,6 +29,16 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
         <StatusBadge tone={day.completed ? 'mint' : 'neutral'}>{day.completed ? 'Concluído' : 'Não concluído'}</StatusBadge>
       </div>
 
+      {cover && (
+        <div className="plan-day-release-strip">
+          <CoverImage src={cover} alt={day.release?.songTitle || 'Capa do lançamento'} />
+          <div>
+            <strong>{day.release?.songTitle || 'Lançamento'}</strong>
+            <span>{day.artist?.stageName || 'Artista'} · {day.phase}</span>
+          </div>
+        </div>
+      )}
+
       <div className="plan-day-meta">
         <span>Fase: <strong>{day.phase}</strong></span>
         <span>{day.artist?.stageName || 'Artista'} · {day.release?.songTitle || 'Lançamento'}</span>
@@ -37,13 +52,13 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
         />
         <span>
           <CheckCircle2 size={17} />
-          Dia concluído
+          Dia concluído/postado
         </span>
       </label>
 
       <section className="orientation-section">
         <div className="orientation-heading">
-          <strong>Orientações do dia</strong>
+          <strong>Ação principal do dia</strong>
           <span>{day.orientations.length} item(s)</span>
         </div>
 
@@ -68,17 +83,21 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
           ))}
         </div>
 
-        <form className="add-orientation-form" onSubmit={handleAdd}>
-          <input
-            value={newOrientation}
-            onChange={(event) => setNewOrientation(event.target.value)}
-            placeholder="Adicionar orientação para este dia"
-          />
-          <button className="secondary-button compact" type="submit">
-            <Plus size={15} />
-            <span>Adicionar</span>
-          </button>
-        </form>
+        {canAddOrientation ? (
+          <form className="add-orientation-form" onSubmit={handleAdd}>
+            <input
+              value={newOrientation}
+              onChange={(event) => setNewOrientation(event.target.value)}
+              placeholder="Adicionar orientação para este dia"
+            />
+            <button className="secondary-button compact" type="submit">
+              <Plus size={15} />
+              <span>Adicionar</span>
+            </button>
+          </form>
+        ) : (
+          <p className="orientation-limit-note">Plano aleatório usa uma ação principal por dia. Edite o texto acima ou remova para criar outra.</p>
+        )}
       </section>
     </article>
   );

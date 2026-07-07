@@ -1,4 +1,4 @@
-﻿import { Edit3, Mail, Phone, Plus, Trash2 } from 'lucide-react';
+﻿import { Edit3, Mail, Music2, Phone, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ArtistForm } from '../components/ArtistForm';
 import { ColorSwatches } from '../components/ColorSwatches';
@@ -28,7 +28,7 @@ export function ArtistsPage({ artists, releases, onSave, onDelete }) {
   return (
     <section className="page-content">
       <PageHeader eyebrow="Catálogo" title="Artistas">
-        <button className="primary-button" onClick={() => setShowForm(true)}>
+        <button className="primary-button" onClick={() => setShowForm(true)} type="button">
           <Plus size={16} />
           <span>Novo artista</span>
         </button>
@@ -51,10 +51,17 @@ export function ArtistsPage({ artists, releases, onSave, onDelete }) {
           return (
             <article className="artist-card" key={artist.id}>
               <div className="artist-card-top">
-                <div>
-                  <span className="eyebrow">{artist.genre || 'Sem estilo'}</span>
-                  <h2>{artist.stageName}</h2>
-                  <p>{artist.archetype || 'Estética ainda não definida'}</p>
+                <div className="artist-identity">
+                  {artist.profileImage ? (
+                    <img className="artist-avatar" src={artist.profileImage} alt={artist.stageName} loading="lazy" />
+                  ) : (
+                    <div className="artist-avatar artist-avatar-fallback"><Music2 size={18} /></div>
+                  )}
+                  <div>
+                    <span className="eyebrow">{artist.genre || 'Sem estilo'}</span>
+                    <h2>{artist.stageName}</h2>
+                    <p>{artist.archetype || 'Estética ainda não definida'}</p>
+                  </div>
                 </div>
                 <StatusBadge>{releaseCount} lanç.</StatusBadge>
               </div>
@@ -63,6 +70,7 @@ export function ArtistsPage({ artists, releases, onSave, onDelete }) {
 
               <div className="meta-list">
                 {artist.legalName && <span>Responsável: {artist.legalName}</span>}
+                {artist.spotifyId && <span>Spotify ID: {artist.spotifyId}</span>}
                 {artist.email && (
                   <span>
                     <Mail size={14} />
@@ -93,11 +101,12 @@ export function ArtistsPage({ artists, releases, onSave, onDelete }) {
                     setEditingArtist(artist);
                     setShowForm(true);
                   }}
+                  type="button"
                 >
                   <Edit3 size={15} />
                   <span>Editar</span>
                 </button>
-                <button className="danger-button" onClick={() => requestDelete(artist)}>
+                <button className="danger-button" onClick={() => requestDelete(artist)} type="button">
                   <Trash2 size={15} />
                   <span>Excluir</span>
                 </button>
@@ -110,10 +119,9 @@ export function ArtistsPage({ artists, releases, onSave, onDelete }) {
       {!artists.length && !showForm && (
         <EmptyState
           title="Nenhum artista cadastrado"
-          action={<button className="secondary-button" onClick={() => setShowForm(true)}>Cadastrar artista</button>}
+          action={<button className="secondary-button" onClick={() => setShowForm(true)} type="button">Cadastrar artista</button>}
         />
       )}
     </section>
   );
 }
-

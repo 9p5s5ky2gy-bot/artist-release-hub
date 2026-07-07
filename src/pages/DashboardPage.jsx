@@ -17,6 +17,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { CoverImage } from '../components/CoverImage';
 import { diffInDays, formatFullDate, formatHumanDate, todayInput } from '../utils/date';
 import { getReleaseProgress } from '../utils/calendar';
+import { getReleaseCover } from '../utils/release';
 
 export function DashboardPage({ artists, releases, planDays, onNavigate }) {
   const today = todayInput();
@@ -87,7 +88,7 @@ export function DashboardPage({ artists, releases, planDays, onNavigate }) {
         <div className="command-release">
           {nextRelease ? (
             <>
-              <CoverImage src={nextRelease.coverUrl} alt={nextRelease.songTitle} />
+              <CoverImage src={getReleaseCover(nextRelease)} alt={nextRelease.songTitle} />
               <div>
                 <StatusBadge>{nextRelease.status}</StatusBadge>
                 <strong>{formatFullDate(nextRelease.releaseDate)}</strong>
@@ -135,7 +136,7 @@ export function DashboardPage({ artists, releases, planDays, onNavigate }) {
                 const progress = getReleaseProgress(release.id, planDays);
                 return (
                   <article className="release-mini" key={release.id}>
-                    <CoverImage src={release.coverUrl} alt={release.songTitle} />
+                    <CoverImage src={getReleaseCover(release)} alt={release.songTitle} />
                     <div>
                       <strong>{release.songTitle}</strong>
                       <span>{artist?.stageName || 'Artista removido'}</span>

@@ -1,10 +1,11 @@
-import { Copy, ExternalLink } from 'lucide-react';
+﻿import { Copy, ExternalLink } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CoverImage } from '../components/CoverImage';
 import { EmptyState } from '../components/EmptyState';
 import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatHumanDate } from '../utils/date';
+import { getReleaseCover } from '../utils/release';
 
 function getReleaseLinks(release) {
   return [
@@ -84,7 +85,7 @@ export function LinksPage({ artists, releases }) {
           return (
             <article className="links-card" key={release.id}>
               <div className="links-card-head">
-                <CoverImage src={release.coverUrl} alt={release.songTitle} />
+                <CoverImage src={getReleaseCover(release)} alt={release.songTitle} />
                 <div>
                   <span className="eyebrow">{artist?.stageName || 'Artista removido'}</span>
                   <h2>{release.songTitle}</h2>

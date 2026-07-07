@@ -127,6 +127,7 @@ export function getReleaseProgress(releaseId, planDays) {
   return {
     completedDays,
     totalDays,
+    remainingDays: Math.max(totalDays - completedDays, 0),
     percent: totalDays ? Math.round((completedDays / totalDays) * 100) : 0,
   };
 }

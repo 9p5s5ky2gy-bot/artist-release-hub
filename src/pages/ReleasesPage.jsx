@@ -1,4 +1,4 @@
-﻿import { CalendarDays, Edit3, Plus, RefreshCcw, Trash2 } from 'lucide-react';
+﻿import { CalendarDays, Edit3, Eraser, Plus, RefreshCcw, Sparkles, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { CoverImage } from '../components/CoverImage';
 import { EmptyState } from '../components/EmptyState';
@@ -8,8 +8,19 @@ import { ReleaseForm } from '../components/ReleaseForm';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatFullDate, formatHumanDate } from '../utils/date';
 import { getReleaseProgress } from '../utils/calendar';
+import { getReleaseCover, getReleaseType } from '../utils/release';
 
-export function ReleasesPage({ artists, releases, planDays, onSave, onDelete, onRegenerate, onNavigate }) {
+export function ReleasesPage({
+  artists,
+  releases,
+  planDays,
+  onSave,
+  onDelete,
+  onRegenerate,
+  onGenerateRandomPlan,
+  onClearGeneratedPlan,
+  onNavigate,
+}) {
   const [editingRelease, setEditingRelease] = useState(null);
   const [showForm, setShowForm] = useState(!releases.length);
 
@@ -58,34 +69,49 @@ export function ReleasesPage({ artists, releases, planDays, onSave, onDelete, on
         {releases.map((release) => {
           const artist = artists.find((item) => item.id === release.artistId);
           const progress = getReleaseProgress(release.id, planDays);
+          const remainingDays = Math.max(progress.totalDays - progress.completedDays, 0);
+          const hasRandomPlan = release.planMode === 'random' || release.randomPlanGeneratedAt;
 
           return (
             <article className="release-card" key={release.id}>
               <div className="release-card-media">
-                <CoverImage src={release.coverUrl} alt={release.songTitle} />
+                <CoverImage src={getReleaseCover(release)} alt={release.songTitle} />
                 <StatusBadge>{release.status}</StatusBadge>
               </div>
 
               <div className="release-card-body">
-                <span className="eyebrow">{artist?.stageName || 'Artista removido'}</span>
-                <h2>{release.songTitle}</h2>
+                <div className="release-card-title-row">
+                  <div>
+                    <span className="eyebrow">{artist?.stageName || 'Artista removido'}</span>
+                    <h2>{release.songTitle}</h2>
+                  </div>
+                  <StatusBadge tone={hasRandomPlan ? 'mint' : 'neutral'}>{hasRandomPlan ? 'plano aleatório' : getReleaseType(release)}</StatusBadge>
+                </div>
+
                 <div className="date-pair">
                   <span>
                     <CalendarDays size={15} />
                     Lançamento: {formatFullDate(release.releaseDate)}
                   </span>
                   <span>Pré-save: {formatHumanDate(release.presaveDate)}</span>
+                  <span>Tipo: {getReleaseType(release)}</span>
                 </div>
                 {release.notes && <p className="card-note">{release.notes}</p>}
 
                 <div className="progress-block">
                   <div>
-                    <span>{progress.completedDays}/{progress.totalDays} dias concluídos</span>
+                    <span>{progress.completedDays}/{progress.totalDays} dias concluídos · {remainingDays} faltam</span>
                     <strong>{progress.percent}%</strong>
                   </div>
                   <div className="progress-track">
                     <span style={{ width: `${progress.percent}%` }} />
                   </div>
+                </div>
+
+                <div className="release-progress-pills">
+                  <StatusBadge tone="mint">{progress.completedDays} feitos</StatusBadge>
+                  <StatusBadge tone="blue">{remainingDays} em aberto</StatusBadge>
+                  <StatusBadge tone="yellow">{progress.percent}% concluído</StatusBadge>
                 </div>
 
                 <div className="link-row">
@@ -107,9 +133,19 @@ export function ReleasesPage({ artists, releases, planDays, onSave, onDelete, on
                     <Edit3 size={15} />
                     <span>Editar</span>
                   </button>
+                  <button className="secondary-button" onClick={() => onGenerateRandomPlan(release.id)} type="button">
+                    <Sparkles size={15} />
+                    <span>{hasRandomPlan ? 'Regenerar ações' : 'Gerar ações'}</span>
+                  </button>
+                  {hasRandomPlan && (
+                    <button className="secondary-button" onClick={() => onClearGeneratedPlan(release.id)} type="button">
+                      <Eraser size={15} />
+                      <span>Limpar ações</span>
+                    </button>
+                  )}
                   <button className="secondary-button" onClick={() => onRegenerate(release.id)} type="button">
                     <RefreshCcw size={15} />
-                    <span>Regerar</span>
+                    <span>Modelo padrão</span>
                   </button>
                   <button className="danger-button" onClick={() => requestDelete(release)} type="button">
                     <Trash2 size={15} />

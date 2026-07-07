@@ -1,15 +1,20 @@
-﻿import { CalendarCheck, Save, X } from 'lucide-react';
+﻿import { CalendarCheck, Save, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { releaseStatuses } from '../data/calendarTemplate';
 import { addDays, formatDateInput, getLastFridayOfMonth } from '../utils/date';
-import { CoverImage } from './CoverImage';
+import { releaseTypes } from '../utils/release';
+import { CoverUploader } from './CoverUploader';
 
 const emptyRelease = {
   artistId: '',
   songTitle: '',
+  releaseType: 'Single',
   releaseDate: '',
   presaveDate: '',
   coverUrl: '',
+  coverImageUrl: '',
+  coverImage: '',
+  coverImageMeta: null,
   presaveLink: '',
   spotifyLink: '',
   youtubeLink: '',
@@ -20,6 +25,7 @@ const emptyRelease = {
   customLinks: [],
   notes: '',
   status: 'planejamento',
+  shouldGenerateRandomPlan: false,
 };
 
 function serializeLinks(links = []) {
@@ -41,12 +47,22 @@ function parseLinks(text) {
     .filter((link) => link.url);
 }
 
+function normalizeFormRelease(release) {
+  return {
+    ...emptyRelease,
+    ...(release || {}),
+    releaseType: release?.releaseType || release?.type || 'Single',
+    coverUrl: release?.coverUrl || release?.coverImageUrl || '',
+    shouldGenerateRandomPlan: false,
+  };
+}
+
 export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
   const [form, setForm] = useState(emptyRelease);
   const [customLinksText, setCustomLinksText] = useState('');
 
   useEffect(() => {
-    const next = editingRelease || emptyRelease;
+    const next = normalizeFormRelease(editingRelease);
     setForm(next);
     setCustomLinksText(serializeLinks(next.customLinks));
   }, [editingRelease]);
@@ -57,14 +73,19 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
   );
 
   function updateField(event) {
-    const { name, value } = event.target;
+    const { checked, name, type, value } = event.target;
     setForm((current) => {
-      const next = { ...current, [name]: value };
+      const fieldValue = type === 'checkbox' ? checked : value;
+      const next = { ...current, [name]: fieldValue };
       if (name === 'releaseDate' && value && !current.presaveDate) {
         next.presaveDate = formatDateInput(addDays(value, -14));
       }
       return next;
     });
+  }
+
+  function updateCover(patch) {
+    setForm((current) => ({ ...current, ...patch }));
   }
 
   function applyLastFriday() {
@@ -104,9 +125,9 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
       </div>
 
       <div className="release-form-layout">
-        <div className="cover-preview">
-          <CoverImage src={form.coverUrl} alt={form.songTitle || 'Capa do lançamento'} />
-          {selectedArtist && <strong>{selectedArtist.stageName}</strong>}
+        <div className="cover-column">
+          <CoverUploader release={form} onChange={updateCover} />
+          {selectedArtist && <strong className="selected-artist-name">{selectedArtist.stageName}</strong>}
         </div>
 
         <div className="form-grid">
@@ -126,6 +147,24 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
             <input name="songTitle" value={form.songTitle} onChange={updateField} required />
           </label>
           <label>
+            Tipo do lançamento
+            <select name="releaseType" value={form.releaseType} onChange={updateField}>
+              {releaseTypes.map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Status do lançamento
+            <select name="status" value={form.status} onChange={updateField}>
+              {releaseStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             Data de lançamento
             <span className="date-action-field">
               <input type="date" name="releaseDate" value={form.releaseDate} onChange={updateField} required />
@@ -139,19 +178,17 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
             Início do pré-save
             <input type="date" name="presaveDate" value={form.presaveDate} onChange={updateField} />
           </label>
-          <label>
-            Status do lançamento
-            <select name="status" value={form.status} onChange={updateField}>
-              {releaseStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            URL da capa
-            <input name="coverUrl" value={form.coverUrl} onChange={updateField} placeholder="https://..." />
+          <label className="span-2 checkbox-card-label">
+            <input
+              checked={form.shouldGenerateRandomPlan}
+              name="shouldGenerateRandomPlan"
+              onChange={updateField}
+              type="checkbox"
+            />
+            <span>
+              <Sparkles size={16} />
+              Gerar plano automático com ações aleatórias ao salvar
+            </span>
           </label>
           <label>
             Link do pré-save
@@ -200,7 +237,7 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
       <div className="form-actions">
         <button className="primary-button" type="submit" disabled={!artists.length}>
           <Save size={16} />
-          <span>{editingRelease ? 'Salvar lançamento' : 'Cadastrar e gerar calendário'}</span>
+          <span>{editingRelease ? 'Salvar lançamento' : 'Cadastrar lançamento'}</span>
         </button>
       </div>
     </form>

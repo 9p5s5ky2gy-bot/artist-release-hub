@@ -13,6 +13,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { hasWorkspaceData, loadWorkspace, normalizeWorkspace, saveWorkspace } from './lib/workspaceStore';
 import { buildPlanDays, generateTasksForRelease, getDayKey } from './utils/calendar';
+import { generateRandomActionsForRelease } from './utils/randomPlan';
 import { exportTasksCsv } from './utils/csv';
 import { createDemoData } from './data/demoData';
 import { addDays, diffInDays, formatDateInput } from './utils/date';
@@ -30,9 +31,12 @@ function sortByDate(items) {
 }
 
 function normalizeRelease(release) {
+  const { shouldGenerateRandomPlan, ...cleanRelease } = release;
   return {
-    ...release,
-    presaveDate: release.presaveDate || formatDateInput(addDays(release.releaseDate, -14)),
+    ...cleanRelease,
+    releaseType: cleanRelease.releaseType || cleanRelease.type || 'Single',
+    coverImageUrl: cleanRelease.coverImageUrl || cleanRelease.coverUrl || '',
+    presaveDate: cleanRelease.presaveDate || formatDateInput(addDays(cleanRelease.releaseDate, -14)),
   };
 }
 
@@ -222,6 +226,7 @@ export default function App() {
   }
 
   function saveRelease(release) {
+    const shouldGenerateRandomPlan = Boolean(release.shouldGenerateRandomPlan);
     const normalized = normalizeRelease({
       ...release,
       songTitle: release.songTitle.trim(),
@@ -229,18 +234,36 @@ export default function App() {
       createdAt: release.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
+    const releaseToSave = shouldGenerateRandomPlan
+      ? {
+          ...normalized,
+          planMode: 'random',
+          randomPlanSeed: Date.now(),
+          randomPlanGeneratedAt: new Date().toISOString(),
+        }
+      : normalized;
 
     setReleases((current) =>
-      release.id ? current.map((item) => (item.id === release.id ? normalized : item)) : [...current, normalized],
+      release.id ? current.map((item) => (item.id === release.id ? releaseToSave : item)) : [...current, releaseToSave],
     );
 
     setTasks((current) => {
-      const existingForRelease = current.filter((task) => task.releaseId === normalized.id);
-      const others = current.filter((task) => task.releaseId !== normalized.id);
-      return sortByDate([...others, ...generateTasksForRelease(normalized, existingForRelease)]);
+      const existingForRelease = current.filter((task) => task.releaseId === releaseToSave.id);
+      const others = current.filter((task) => task.releaseId !== releaseToSave.id);
+      if (shouldGenerateRandomPlan) {
+        const artist = artists.find((item) => item.id === releaseToSave.artistId);
+        return sortByDate([
+          ...others,
+          ...generateRandomActionsForRelease(releaseToSave, artist, releaseToSave.randomPlanSeed),
+        ]);
+      }
+      return sortByDate([...others, ...generateTasksForRelease(releaseToSave, existingForRelease)]);
     });
-  }
 
+    if (shouldGenerateRandomPlan) {
+      setDayCompletions((current) => removeCompletionKeys(current, [releaseToSave.id]));
+    }
+  }
   function deleteRelease(releaseId) {
     setReleases((current) => current.filter((release) => release.id !== releaseId));
     setTasks((current) => current.filter((task) => task.releaseId !== releaseId));
@@ -291,14 +314,58 @@ export default function App() {
     setTasks((current) => current.filter((task) => task.id !== orientationId));
   }
 
+  function generateRandomPlanForRelease(releaseId) {
+    const release = releases.find((item) => item.id === releaseId);
+    if (!release) return;
+    if (!window.confirm('Gerar novas ações aleatórias e substituir as orientações atuais deste lançamento?')) return;
+
+    const seed = Date.now();
+    const randomRelease = {
+      ...release,
+      releaseType: release.releaseType || release.type || 'Single',
+      planMode: 'random',
+      randomPlanSeed: seed,
+      randomPlanGeneratedAt: new Date().toISOString(),
+    };
+    const artist = artists.find((item) => item.id === release.artistId);
+
+    setReleases((current) => current.map((item) => (item.id === releaseId ? randomRelease : item)));
+    setTasks((current) => {
+      const others = current.filter((task) => task.releaseId !== releaseId);
+      return sortByDate([...others, ...generateRandomActionsForRelease(randomRelease, artist, seed)]);
+    });
+    setDayCompletions((current) => removeCompletionKeys(current, [releaseId]));
+  }
+
+  function clearGeneratedPlanForRelease(releaseId) {
+    const release = releases.find((item) => item.id === releaseId);
+    if (!release) return;
+    if (!window.confirm('Limpar as ações aleatórias deste lançamento?')) return;
+
+    setReleases((current) =>
+      current.map((item) =>
+        item.id === releaseId
+          ? { ...item, planMode: '', randomPlanSeed: null, randomPlanGeneratedAt: null }
+          : item,
+      ),
+    );
+    setTasks((current) =>
+      current.filter((task) => task.releaseId !== releaseId || (task.templateId !== 'random-plan' && !task.generatedPlan)),
+    );
+    setDayCompletions((current) => removeCompletionKeys(current, [releaseId]));
+  }
+
   function regenerateRelease(releaseId) {
     const release = releases.find((item) => item.id === releaseId);
     if (!release) return;
+    const standardRelease = { ...release, planMode: '', randomPlanSeed: null, randomPlanGeneratedAt: null };
+    setReleases((current) => current.map((item) => (item.id === releaseId ? standardRelease : item)));
     setTasks((current) => {
       const existingForRelease = current.filter((task) => task.releaseId === release.id);
       const others = current.filter((task) => task.releaseId !== release.id);
-      return sortByDate([...others, ...generateTasksForRelease(release, existingForRelease)]);
+      return sortByDate([...others, ...generateTasksForRelease(standardRelease, existingForRelease)]);
     });
+    setDayCompletions((current) => removeCompletionKeys(current, [releaseId]));
   }
 
   function regenerateAllCalendars() {
@@ -382,6 +449,8 @@ export default function App() {
         onSave={saveRelease}
         onDelete={deleteRelease}
         onRegenerate={regenerateRelease}
+        onGenerateRandomPlan={generateRandomPlanForRelease}
+        onClearGeneratedPlan={clearGeneratedPlanForRelease}
         onNavigate={setActivePage}
       />
     ),
