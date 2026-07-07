@@ -14,6 +14,7 @@ import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { hasWorkspaceData, loadWorkspace, normalizeWorkspace, saveWorkspace } from './lib/workspaceStore';
 import { buildPlanDays, generateTasksForRelease, getDayKey } from './utils/calendar';
 import { generateRandomActionsForRelease } from './utils/randomPlan';
+import { getDailyActionCount } from './utils/release';
 import { exportTasksCsv } from './utils/csv';
 import { createDemoData } from './data/demoData';
 import { addDays, diffInDays, formatDateInput } from './utils/date';
@@ -35,6 +36,7 @@ function normalizeRelease(release) {
   return {
     ...cleanRelease,
     releaseType: cleanRelease.releaseType || cleanRelease.type || 'Single',
+    dailyActionCount: getDailyActionCount(cleanRelease),
     coverImageUrl: cleanRelease.coverImageUrl || cleanRelease.coverUrl || '',
     presaveDate: cleanRelease.presaveDate || formatDateInput(addDays(cleanRelease.releaseDate, -14)),
   };
@@ -71,7 +73,7 @@ export default function App() {
   const lastPayloadRef = useRef('');
 
   const sortedArtists = useMemo(
-    () => [...artists].sort((a, b) => a.stageName.localeCompare(b.stageName)),
+    () => [...artists].sort((a, b) => String(a.stageName || '').localeCompare(String(b.stageName || ''))),
     [artists],
   );
   const sortedReleases = useMemo(() => sortByDate(releases), [releases]);
@@ -317,7 +319,7 @@ export default function App() {
   function generateRandomPlanForRelease(releaseId) {
     const release = releases.find((item) => item.id === releaseId);
     if (!release) return;
-    if (!window.confirm('Gerar novas ações aleatórias e substituir as orientações atuais deste lançamento?')) return;
+    if (!window.confirm('Gerar novas sugestões IA e substituir as orientações atuais deste lançamento?')) return;
 
     const seed = Date.now();
     const randomRelease = {
@@ -340,7 +342,7 @@ export default function App() {
   function clearGeneratedPlanForRelease(releaseId) {
     const release = releases.find((item) => item.id === releaseId);
     if (!release) return;
-    if (!window.confirm('Limpar as ações aleatórias deste lançamento?')) return;
+    if (!window.confirm('Limpar as sugestões IA deste lançamento?')) return;
 
     setReleases((current) =>
       current.map((item) =>

@@ -9,6 +9,7 @@ const emptyRelease = {
   artistId: '',
   songTitle: '',
   releaseType: 'Single',
+  dailyActionCount: 1,
   releaseDate: '',
   presaveDate: '',
   coverUrl: '',
@@ -52,6 +53,7 @@ function normalizeFormRelease(release) {
     ...emptyRelease,
     ...(release || {}),
     releaseType: release?.releaseType || release?.type || 'Single',
+    dailyActionCount: Number(release?.dailyActionCount || release?.postsPerDay || 1),
     coverUrl: release?.coverUrl || release?.coverImageUrl || '',
     shouldGenerateRandomPlan: false,
   };
@@ -155,6 +157,14 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
             </select>
           </label>
           <label>
+            Ações/postagens por dia
+            <select name="dailyActionCount" value={form.dailyActionCount} onChange={updateField}>
+              <option value="1">1 por dia</option>
+              <option value="2">2 por dia</option>
+              <option value="3">3 por dia</option>
+            </select>
+          </label>
+          <label>
             Status do lançamento
             <select name="status" value={form.status} onChange={updateField}>
               {releaseStatuses.map((status) => (
@@ -187,7 +197,7 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
             />
             <span>
               <Sparkles size={16} />
-              Gerar plano automático com ações aleatórias ao salvar
+              Gerar plano automático com sugestões IA ao salvar
             </span>
           </label>
           <label>

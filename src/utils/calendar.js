@@ -116,7 +116,7 @@ export function buildPlanDays(tasks, releases, artists, dayCompletions = {}) {
     .sort((a, b) => {
       const dateOrder = a.date.localeCompare(b.date);
       if (dateOrder !== 0) return dateOrder;
-      return a.release.songTitle.localeCompare(b.release.songTitle);
+      return String(a.release?.songTitle || '').localeCompare(String(b.release?.songTitle || ''));
     });
 }
 

@@ -8,7 +8,7 @@ import { ReleaseForm } from '../components/ReleaseForm';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatFullDate, formatHumanDate } from '../utils/date';
 import { getReleaseProgress } from '../utils/calendar';
-import { getReleaseCover, getReleaseType } from '../utils/release';
+import { getDailyActionCount, getReleaseCover, getReleaseType } from '../utils/release';
 
 export function ReleasesPage({
   artists,
@@ -85,7 +85,7 @@ export function ReleasesPage({
                     <span className="eyebrow">{artist?.stageName || 'Artista removido'}</span>
                     <h2>{release.songTitle}</h2>
                   </div>
-                  <StatusBadge tone={hasRandomPlan ? 'mint' : 'neutral'}>{hasRandomPlan ? 'plano aleatório' : getReleaseType(release)}</StatusBadge>
+                  <StatusBadge tone={hasRandomPlan ? 'mint' : 'neutral'}>{hasRandomPlan ? `${getDailyActionCount(release)} ações/dia` : getReleaseType(release)}</StatusBadge>
                 </div>
 
                 <div className="date-pair">
@@ -112,6 +112,7 @@ export function ReleasesPage({
                   <StatusBadge tone="mint">{progress.completedDays} feitos</StatusBadge>
                   <StatusBadge tone="blue">{remainingDays} em aberto</StatusBadge>
                   <StatusBadge tone="yellow">{progress.percent}% concluído</StatusBadge>
+                  <StatusBadge tone="neutral">{getDailyActionCount(release)} ação(ões)/dia</StatusBadge>
                 </div>
 
                 <div className="link-row">
@@ -135,12 +136,12 @@ export function ReleasesPage({
                   </button>
                   <button className="secondary-button" onClick={() => onGenerateRandomPlan(release.id)} type="button">
                     <Sparkles size={15} />
-                    <span>{hasRandomPlan ? 'Regenerar ações' : 'Gerar ações'}</span>
+                    <span>{hasRandomPlan ? 'Regenerar IA' : 'Gerar sugestões IA'}</span>
                   </button>
                   {hasRandomPlan && (
                     <button className="secondary-button" onClick={() => onClearGeneratedPlan(release.id)} type="button">
                       <Eraser size={15} />
-                      <span>Limpar ações</span>
+                      <span>Limpar IA</span>
                     </button>
                   )}
                   <button className="secondary-button" onClick={() => onRegenerate(release.id)} type="button">

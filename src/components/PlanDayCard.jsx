@@ -1,15 +1,27 @@
 ﻿import { CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { formatFullDate } from '../utils/date';
-import { getReleaseCover } from '../utils/release';
+import { getDailyActionCount, getReleaseCover } from '../utils/release';
 import { CoverImage } from './CoverImage';
 import { StatusBadge } from './StatusBadge';
+
+function phaseClassName(phase) {
+  return String(phase || 'planejamento')
+    .toLowerCase()
+    .replaceAll('ç', 'c')
+    .replaceAll('ã', 'a')
+    .replaceAll('é', 'e')
+    .replaceAll('ó', 'o')
+    .replaceAll(' ', '-');
+}
 
 export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAddOrientation, onDeleteOrientation }) {
   const [newOrientation, setNewOrientation] = useState('');
   const cover = getReleaseCover(day.release);
   const isRandomPlan = day.release?.planMode === 'random' || day.orientations.some((item) => item.generatedPlan || item.templateId === 'random-plan');
-  const canAddOrientation = !isRandomPlan || day.orientations.length === 0;
+  const maxActions = isRandomPlan ? getDailyActionCount(day.release) : Infinity;
+  const canAddOrientation = day.orientations.length < maxActions;
+  const heading = isRandomPlan ? 'Sugestões IA do dia' : 'Orientações do dia';
 
   function handleAdd(event) {
     event.preventDefault();
@@ -19,7 +31,7 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
   }
 
   return (
-    <article className={`plan-day-card phase-${day.phase.toLowerCase().replaceAll('ç', 'c').replaceAll('ã', 'a').replaceAll('é', 'e').replaceAll('ó', 'o').replaceAll(' ', '-')} ${day.completed ? 'is-completed' : ''}`}>
+    <article className={`plan-day-card phase-${phaseClassName(day.phase)} ${day.completed ? 'is-completed' : ''}`}>
       <div className="plan-day-topline">
         <div>
           <span className="eyebrow">Dia {day.dayNumber}</span>
@@ -58,27 +70,41 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
 
       <section className="orientation-section">
         <div className="orientation-heading">
-          <strong>Ação principal do dia</strong>
-          <span>{day.orientations.length} item(s)</span>
+          <strong>{heading}</strong>
+          <span>{isRandomPlan ? `${day.orientations.length}/${maxActions} ação(ões)` : `${day.orientations.length} item(s)`}</span>
         </div>
 
         <div className="orientation-list">
-          {day.orientations.map((orientation) => (
-            <div className="orientation-item" key={orientation.id}>
+          {day.orientations.map((orientation, index) => (
+            <div className="orientation-card" key={orientation.id}>
+              <div className="orientation-card-head">
+                <StatusBadge tone={orientation.priority === 'alta' ? 'red' : orientation.priority === 'média' ? 'yellow' : 'blue'}>
+                  {orientation.type || `Ação ${index + 1}`}
+                </StatusBadge>
+                <button
+                  className="icon-button orientation-remove"
+                  type="button"
+                  onClick={() => onDeleteOrientation(orientation.id)}
+                  aria-label="Remover orientação"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
               <textarea
+                className="orientation-title-input"
                 value={orientation.title}
                 onChange={(event) => onUpdateOrientation(orientation.id, { title: event.target.value })}
                 rows="2"
-                aria-label="Texto da orientação"
+                aria-label="Título da ação"
               />
-              <button
-                className="icon-button orientation-remove"
-                type="button"
-                onClick={() => onDeleteOrientation(orientation.id)}
-                aria-label="Remover orientação"
-              >
-                <Trash2 size={15} />
-              </button>
+              <textarea
+                className="orientation-description-input"
+                value={orientation.description || ''}
+                onChange={(event) => onUpdateOrientation(orientation.id, { description: event.target.value })}
+                rows="4"
+                placeholder="Sugestão do que postar, gancho, CTA ou observação"
+                aria-label="Sugestão detalhada da ação"
+              />
             </div>
           ))}
         </div>
@@ -88,7 +114,7 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
             <input
               value={newOrientation}
               onChange={(event) => setNewOrientation(event.target.value)}
-              placeholder="Adicionar orientação para este dia"
+              placeholder="Adicionar ação para este dia"
             />
             <button className="secondary-button compact" type="submit">
               <Plus size={15} />
@@ -96,7 +122,7 @@ export function PlanDayCard({ day, onSetDayCompleted, onUpdateOrientation, onAdd
             </button>
           </form>
         ) : (
-          <p className="orientation-limit-note">Plano aleatório usa uma ação principal por dia. Edite o texto acima ou remova para criar outra.</p>
+          <p className="orientation-limit-note">Este lançamento está configurado para {maxActions} ação(ões) por dia. Edite as sugestões acima ou regenere com outra quantidade.</p>
         )}
       </section>
     </article>

@@ -2298,3 +2298,49 @@ textarea:focus {
   font-size: 0.82rem;
   line-height: 1.45;
 }
+
+/* Multi-action daily plan */
+.orientation-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  background: rgba(9, 11, 15, 0.5);
+  padding: 10px;
+}
+
+.orientation-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.orientation-title-input {
+  min-height: 48px;
+  font-weight: 800;
+}
+
+.orientation-description-input {
+  min-height: 92px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.orientation-description-input:focus {
+  color: var(--text);
+}
+
+.orientation-list {
+  align-content: start;
+}
+
+@media (max-width: 520px) {
+  .orientation-card-head {
+    align-items: flex-start;
+  }
+
+  .orientation-description-input {
+    min-height: 120px;
+  }
+}
