@@ -340,7 +340,9 @@ export default function App() {
     if (!release || !orientation?.id) return;
 
     const artist = artists.find((item) => item.id === (orientation.artistId || release.artistId)) || day.artist;
-    const offset = typeof day.offset === 'number' ? day.offset : diffInDays(day.date, release.releaseDate);
+    const offset = typeof day.offset === 'number' ? day.offset : diffInDays(day.date, release.releaseDate || day.date);
+    const releaseDate = release.releaseDate || formatDateInput(addDays(day.date, -offset));
+    const releaseForGeneration = { ...release, releaseDate };
     const actionNumber = slot + 1;
     const dayCompleted = Boolean(dayCompletions[getDayKey(release.id, day.date)] || day.completed);
     const manualWarning = Boolean(orientation.manuallyEdited || orientation.templateId === 'custom' || !orientation.generatedPlan);
@@ -358,7 +360,7 @@ export default function App() {
 
     const seed = Date.now() + Math.floor(Math.random() * 100000);
     const nextAction = generateRandomActionForDay({
-      release,
+      release: releaseForGeneration,
       artist,
       offset,
       slot,
