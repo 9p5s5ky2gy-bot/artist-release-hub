@@ -52,6 +52,32 @@ const baseActions = {
   ],
 };
 
+const singleDateAnnouncementAction = [
+  'Anúncio de data',
+  'Anuncie oficialmente a data do single com uma chamada direta, visual forte e convite para acompanhar a semana final.',
+  'post',
+  'alta',
+];
+
+function normalizeActionText(text) {
+  return String(text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function isSingleRelease(release) {
+  return normalizeActionText(getReleaseType(release)) === 'single';
+}
+
+function isDateAnnouncementAction(action) {
+  return normalizeActionText(action?.[0]) === 'anuncio de data';
+}
+
+function getRequiredActionForSlot(release, offset, slot) {
+  if (isSingleRelease(release) && offset === -7 && slot === 0) return singleDateAnnouncementAction;
+  return null;
+}
 const typeActions = {
   EP: [
     ['Apresentar faixa foco do EP', 'Explique por que essa faixa puxa o projeto.', 'post', 'alta'],
@@ -164,10 +190,14 @@ function getPhaseLabel(phase) {
   return labels[phase] || phase;
 }
 
-function buildPool(phase, release, artist) {
+function buildPool(phase, release, artist, offset = 0) {
   const type = getReleaseType(release);
   const presaveReady = Boolean(release.presaveLink || release.presaveDate);
-  const pool = [...baseActions[phase]];
+  let pool = [...baseActions[phase]];
+
+  if (isSingleRelease(release) && offset < -7) {
+    pool = pool.filter((action) => !isDateAnnouncementAction(action));
+  }
 
   if (phase !== 'launchDay' && typeActions[type]) pool.push(...typeActions[type]);
   if (phase === 'presave' && !presaveReady) {
@@ -207,14 +237,16 @@ export function generateRandomActionForDay({ release, artist, offset = 0, slot =
   if (!release?.id || !release?.releaseDate) return null;
 
   const phase = getPhase(offset);
-  const pool = buildPool(phase, release, artist);
+  const pool = buildPool(phase, release, artist, offset);
   const usedTitles = new Set(
     existingActions
       .map((item) => (typeof item === 'string' ? item : item?.title))
       .filter(Boolean),
   );
   const random = createRandom(hashSeed(`${release.id}-${release.releaseDate}-${offset}-${slot}-${seed}`));
-  const action = pickAction(pool, usedTitles, random);
+  const requiredAction = getRequiredActionForSlot(release, offset, slot);
+  const action = requiredAction || pickAction(pool, usedTitles, random);
+  if (requiredAction) usedTitles.add(requiredAction[0]);
   const [title, _description, type, priority, linkField] = action;
 
   return {
@@ -245,10 +277,12 @@ export function generateRandomActionsForRelease(release, artist, seed = Date.now
 
   return offsets.flatMap((offset) => {
     const phase = getPhase(offset);
-    const pool = buildPool(phase, release, artist);
+    const pool = buildPool(phase, release, artist, offset);
 
     return Array.from({ length: dailyActionCount }, (_, slot) => {
-      const action = pickAction(pool, usedTitles, random);
+      const requiredAction = getRequiredActionForSlot(release, offset, slot);
+      const action = requiredAction || pickAction(pool, usedTitles, random);
+      if (requiredAction) usedTitles.add(requiredAction[0]);
       const [title, _description, type, priority, linkField] = action;
 
       return {

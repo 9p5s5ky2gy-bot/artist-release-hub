@@ -1,29 +1,66 @@
-﻿import { addDays, diffInDays, formatDateInput } from './date';
+import { addDays, diffInDays, formatDateInput } from './date';
 import { calendarTemplate } from '../data/calendarTemplate';
+import { getReleaseType } from './release';
 
 export const MAX_PLAN_DAYS = 31;
+
+function normalizeText(text) {
+  return String(text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function isSingleRelease(release) {
+  return normalizeText(getReleaseType(release)) === 'single';
+}
+
+function adaptTemplateForRelease(template, release) {
+  if (!isSingleRelease(release)) return template;
+
+  if (template.offset === -15 && normalizeText(template.title).includes('anunciar')) {
+    return {
+      ...template,
+      title: 'Sinalizar que algo está chegando',
+      description: 'Publicar chamada misteriosa sem revelar a data do single ainda. Guarde o anúncio oficial para 7 dias antes.',
+    };
+  }
+
+  if (template.offset === -7 && template.id === '-7-1') {
+    return {
+      ...template,
+      title: 'Anunciar data do single',
+      description: `Revelar oficialmente que o single sai em ${release.releaseDate}. Começar a contagem regressiva forte da semana final.`,
+      type: 'post',
+      priority: 'alta',
+    };
+  }
+
+  return template;
+}
 
 export function generateTasksForRelease(release, existingTasks = []) {
   if (!release?.id || !release?.releaseDate) return [];
 
   const generated = calendarTemplate.map((template) => {
+    const releaseTemplate = adaptTemplateForRelease(template, release);
     const existing = existingTasks.find((task) => task.id === `${release.id}-${template.id}`);
-    const suggestedLink = template.linkField ? release[template.linkField] || '' : '';
+    const suggestedLink = releaseTemplate.linkField ? release[releaseTemplate.linkField] || '' : '';
 
     return {
       id: `${release.id}-${template.id}`,
       templateId: template.id,
       releaseId: release.id,
       artistId: release.artistId,
-      title: existing?.title || template.title,
-      description: existing?.description || template.description,
-      type: template.type,
-      date: formatDateInput(addDays(release.releaseDate, template.offset)),
+      title: existing?.title || releaseTemplate.title,
+      description: existing?.description || releaseTemplate.description,
+      type: releaseTemplate.type,
+      date: formatDateInput(addDays(release.releaseDate, releaseTemplate.offset)),
       status: existing?.status || 'não concluído',
-      priority: existing?.priority || template.priority || 'média',
+      priority: existing?.priority || releaseTemplate.priority || 'média',
       note: existing?.note || '',
       link: existing?.link || suggestedLink,
-      offset: template.offset,
+      offset: releaseTemplate.offset,
     };
   });
 
