@@ -1,29 +1,51 @@
 import { LockKeyhole, Mail, Music2, ShieldCheck, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 
-export function AuthPage({ configured, loading, authError, onSignIn, onSignUp }) {
+export function AuthPage({ configured, loading, authError, onSignIn, onSignUp, onResendConfirmation }) {
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [canResendConfirmation, setCanResendConfirmation] = useState(false);
+  const [resending, setResending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setSubmitting(true);
     setMessage('');
+    setCanResendConfirmation(false);
 
     try {
       if (mode === 'signup') {
         await onSignUp(email.trim(), password);
-        setMessage('Conta criada. Se o Supabase pedir confirmação, abra o e-mail antes de entrar.');
+        setCanResendConfirmation(true);
+        setMessage('Conta criada. Enviamos o link de confirmação para o seu e-mail. Confira também spam, promoções e lixo eletrônico.');
       } else {
         await onSignIn(email.trim(), password);
+        setCanResendConfirmation(false);
       }
     } catch (error) {
       setMessage(error.message || 'Não foi possível entrar agora.');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleResendConfirmation() {
+    if (!onResendConfirmation || !email.trim()) return;
+
+    setResending(true);
+    setMessage('');
+
+    try {
+      await onResendConfirmation(email.trim());
+      setCanResendConfirmation(true);
+      setMessage('Novo link de confirmação enviado. Confira sua caixa de entrada, spam, promoções e lixo eletrônico.');
+    } catch (error) {
+      setMessage(error.message || 'Não foi possível reenviar o link agora.');
+    } finally {
+      setResending(false);
     }
   }
 
@@ -110,6 +132,18 @@ export function AuthPage({ configured, loading, authError, onSignIn, onSignUp })
         </form>
 
         {(authError || message) && <p className={authError ? 'auth-message is-error' : 'auth-message'}>{authError || message}</p>}
+
+        {mode === 'signup' && canResendConfirmation && onResendConfirmation && (
+          <button
+            className="secondary-button auth-resend-button"
+            disabled={loading || submitting || resending}
+            onClick={handleResendConfirmation}
+            type="button"
+          >
+            <Mail size={16} />
+            <span>{resending ? 'Reenviando...' : 'Reenviar link de confirmação'}</span>
+          </button>
+        )}
       </section>
     </main>
   );

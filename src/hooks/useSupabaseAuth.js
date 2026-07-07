@@ -63,9 +63,27 @@ export function useSupabaseAuth() {
 
   async function signUp(email, password) {
     setAuthError('');
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: getRedirectUrl(),
+      },
+    });
+
+    if (error) {
+      setAuthError(error.message);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async function resendSignupConfirmation(email) {
+    setAuthError('');
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
       options: {
         emailRedirectTo: getRedirectUrl(),
       },
@@ -90,6 +108,7 @@ export function useSupabaseAuth() {
     ...value,
     signIn,
     signUp,
+    resendSignupConfirmation,
     signOut,
   };
 }

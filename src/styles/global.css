@@ -1961,6 +1961,12 @@ textarea:focus {
   margin-top: 6px;
 }
 
+.auth-resend-button {
+  width: 100%;
+  margin-top: 12px;
+  justify-content: center;
+}
+
 .auth-message {
   border: 1px solid rgba(101, 230, 173, 0.22);
   border-radius: var(--radius);

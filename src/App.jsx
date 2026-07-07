@@ -579,6 +579,7 @@ export default function App() {
         authError={auth.authError}
         onSignIn={auth.signIn}
         onSignUp={auth.signUp}
+        onResendConfirmation={auth.resendSignupConfirmation}
       />
     );
   }
