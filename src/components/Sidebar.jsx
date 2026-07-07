@@ -66,7 +66,7 @@ export function Sidebar({
           </div>
           <div className="brand-copy">
             <strong>Artist Release Hub</strong>
-            <span>Music marketing OS</span>
+            <span>Music marketing OS · v2.1 IA posts</span>
           </div>
           <button className="sidebar-close icon-button" onClick={() => setMobileOpen(false)} aria-label="Fechar menu" type="button">
             <X size={18} />
