@@ -1,38 +1,55 @@
-# Artist Release Hub
+﻿# Artist Release Hub
 
-Painel web em React + Vite para organizar artistas, músicas, lançamentos, pré-save, tarefas de divulgação, links e calendário automático.
+Painel web em React + Vite para organizar artistas, músicas, lançamentos, pré-save, links e calendário automático de divulgação musical.
 
-## O que já funciona
+## O que funciona
 
-- Dashboard com artistas, lançamentos ativos, próximos lançamentos, tarefas pendentes, tarefas de hoje, atrasadas e finalizadas.
+- Dashboard com artistas, lançamentos, dias pendentes, dias concluídos e progresso geral.
 - Cadastro, edição e exclusão de artistas.
 - Cadastro, edição e exclusão de lançamentos.
-- Geração automática de calendário a partir da data de lançamento.
-- Tarefas com título, descrição, tipo, data, status, prioridade, observação e link.
-- Filtros por artista, lançamento, status, tipo, data e prioridade.
-- Calendário visual, tabela de tarefas e página centralizada de links.
-- Exportação das tarefas em CSV.
-- Dados salvos no `localStorage` do navegador.
+- Geração automática de calendário de lançamento com pré-save, semana final e pós-lançamento.
+- Checklist simplificado por dia com o botão **Dia concluído**.
+- Orientações de conteúdo editáveis por dia.
+- Página de links por lançamento.
+- Exportação CSV.
+- Login por e-mail/senha com Supabase.
+- Dados salvos na nuvem quando o Supabase está configurado.
+- Fallback para `localStorage` quando as variáveis do Supabase não existem.
 
-## Instalação
+## Rodar no computador
 
-Instale o Node.js LTS no computador e rode:
+Instale as dependências:
 
 ```bash
 npm install
 ```
 
-## Rodar no computador
+Rode o app:
 
 ```bash
 npm run dev
 ```
 
-Depois abra o endereço mostrado no terminal, normalmente:
+Abra o endereço mostrado no terminal, normalmente:
 
 ```text
 http://localhost:5173
 ```
+
+## Configurar Supabase
+
+Leia o passo a passo completo em:
+
+```text
+SUPABASE_SETUP.md
+```
+
+Resumo:
+
+1. Rode o SQL de `supabase/schema.sql` no **SQL Editor** do Supabase.
+2. Configure as variáveis no `.env.local`.
+3. Crie conta no app usando e-mail e senha.
+4. Publique no GitHub Pages usando os secrets `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
 ## Gerar versão de produção
 
@@ -46,34 +63,22 @@ Para testar a versão final:
 npm run preview
 ```
 
-## Onde editar informações
+## Onde editar
 
 - Calendário automático: `src/data/calendarTemplate.js`
-- Status, tipos e prioridades: `src/data/calendarTemplate.js`
+- Lógica principal do app: `src/App.jsx`
+- Login Supabase: `src/hooks/useSupabaseAuth.js`
+- Salvamento em nuvem: `src/lib/workspaceStore.js`
+- Cliente Supabase: `src/lib/supabaseClient.js`
 - Visual geral: `src/styles/global.css`
-- Lógica de localStorage, salvar e exportar: `src/App.jsx`
-- CSV: `src/utils/csv.js`
+- Banco/RLS: `supabase/schema.sql`
+- Deploy GitHub Pages: `.github/workflows/deploy-pages.yml`
 
-Os artistas, lançamentos e tarefas cadastrados pelo painel ficam no navegador em `localStorage`. Ao trocar de navegador ou dispositivo, esses dados não acompanham o app até entrar um banco como Supabase.
+## Próximas evoluções
 
-## Publicar online
-
-Opção simples com Vercel:
-
-1. Suba este projeto para um repositório no GitHub.
-2. Entre em https://vercel.com e importe o repositório.
-3. Use as configurações padrão de Vite:
-   - Build command: `npm run build`
-   - Output directory: `dist`
-4. Publique e acesse pelo link gerado.
-
-## Próximas evoluções preparadas
-
-- Login.
-- Banco de dados Supabase.
-- Deploy na Vercel.
-- Exportação em PDF.
 - Upload real de capa da música.
+- Exportação PDF.
 - Notificações.
 - Modelos diferentes de calendário.
-- Painel para vários clientes/artistas.
+- Separação por clientes/artistas.
+- Tabelas normalizadas no Supabase para relatórios avançados.

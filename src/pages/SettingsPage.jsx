@@ -1,18 +1,51 @@
-﻿import { Bell, Cloud, Database, FileText, LockKeyhole, RefreshCcw, Trash2, Upload } from 'lucide-react';
+﻿import { Bell, Cloud, Database, FileText, LockKeyhole, LogOut, RefreshCcw, ShieldCheck, Trash2, Upload } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { StatCard } from '../components/StatCard';
 import { StatusBadge } from '../components/StatusBadge';
 
 const roadmap = [
-  { label: 'Login', icon: LockKeyhole, status: 'planejado' },
-  { label: 'Supabase', icon: Database, status: 'planejado' },
-  { label: 'Vercel', icon: Cloud, status: 'pronto para build' },
+  { label: 'Login', icon: LockKeyhole, status: 'ativo' },
+  { label: 'Supabase', icon: Database, status: 'ativo' },
+  { label: 'GitHub Pages', icon: Cloud, status: 'pronto' },
   { label: 'PDF', icon: FileText, status: 'planejado' },
   { label: 'Upload de capa', icon: Upload, status: 'planejado' },
   { label: 'Notificações', icon: Bell, status: 'planejado' },
 ];
 
-export function SettingsPage({ artists, releases, tasks, planDays, onLoadDemo, onClearData, onRegenerateAll }) {
+function formatSavedAt(value) {
+  if (!value) return 'Aguardando primeiro salvamento';
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
+function getCloudTone(cloudState) {
+  if (cloudState?.error) return 'red';
+  if (cloudState?.saving) return 'yellow';
+  return 'mint';
+}
+
+function getCloudText(isCloudConfigured, cloudState) {
+  if (!isCloudConfigured) return 'localStorage';
+  if (cloudState?.error) return 'erro';
+  if (cloudState?.saving) return 'salvando';
+  return 'online';
+}
+
+export function SettingsPage({
+  artists,
+  releases,
+  tasks,
+  planDays,
+  cloudState,
+  userEmail,
+  isCloudConfigured,
+  onSignOut,
+  onLoadDemo,
+  onClearData,
+  onRegenerateAll,
+}) {
   return (
     <section className="page-content">
       <PageHeader eyebrow="Sistema" title="Configurações simples" />
@@ -27,9 +60,16 @@ export function SettingsPage({ artists, releases, tasks, planDays, onLoadDemo, o
       <section className="settings-grid">
         <article className="panel">
           <div className="panel-heading">
-            <h2>Dados locais</h2>
-            <StatusBadge>localStorage</StatusBadge>
+            <h2>{isCloudConfigured ? 'Dados em nuvem' : 'Dados locais'}</h2>
+            <StatusBadge tone={getCloudTone(cloudState)}>{getCloudText(isCloudConfigured, cloudState)}</StatusBadge>
           </div>
+
+          <div className="cloud-details">
+            <span><ShieldCheck size={16} /> Conta: <strong>{userEmail || 'modo local'}</strong></span>
+            <span><Cloud size={16} /> Último salvamento: <strong>{formatSavedAt(cloudState?.lastSaved)}</strong></span>
+            {cloudState?.error && <span className="cloud-error"><Database size={16} /> {cloudState.error}</span>}
+          </div>
+
           <div className="settings-actions">
             <button className="secondary-button" onClick={onLoadDemo} type="button">
               <RefreshCcw size={16} />
@@ -39,6 +79,12 @@ export function SettingsPage({ artists, releases, tasks, planDays, onLoadDemo, o
               <RefreshCcw size={16} />
               <span>Regerar calendários</span>
             </button>
+            {isCloudConfigured && userEmail && (
+              <button className="secondary-button" onClick={onSignOut} type="button">
+                <LogOut size={16} />
+                <span>Sair da conta</span>
+              </button>
+            )}
             <button className="danger-button" onClick={onClearData} type="button">
               <Trash2 size={16} />
               <span>Limpar tudo</span>

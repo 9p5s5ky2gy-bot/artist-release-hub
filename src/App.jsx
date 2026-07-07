@@ -1,4 +1,6 @@
-﻿import { useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { AuthPage } from './components/AuthPage';
+import { CloudSetupPage } from './components/CloudSetupPage';
 import { Sidebar } from './components/Sidebar';
 import { DashboardPage } from './pages/DashboardPage';
 import { ArtistsPage } from './pages/ArtistsPage';
@@ -8,6 +10,8 @@ import { TasksPage } from './pages/TasksPage';
 import { LinksPage } from './pages/LinksPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useSupabaseAuth } from './hooks/useSupabaseAuth';
+import { hasWorkspaceData, loadWorkspace, normalizeWorkspace, saveWorkspace } from './lib/workspaceStore';
 import { buildPlanDays, generateTasksForRelease, getDayKey } from './utils/calendar';
 import { exportTasksCsv } from './utils/csv';
 import { createDemoData } from './data/demoData';
@@ -49,6 +53,18 @@ export default function App() {
   const [releases, setReleases] = useLocalStorage(STORAGE.releases, []);
   const [tasks, setTasks] = useLocalStorage(STORAGE.tasks, []);
   const [dayCompletions, setDayCompletions] = useLocalStorage(STORAGE.dayCompletions, {});
+  const auth = useSupabaseAuth();
+  const [workspaceReloadKey, setWorkspaceReloadKey] = useState(0);
+  const [cloudState, setCloudState] = useState({
+    loading: auth.configured,
+    ready: !auth.configured,
+    saving: false,
+    error: '',
+    lastSaved: '',
+  });
+  const saveTimerRef = useRef(null);
+  const hydratedUserRef = useRef('');
+  const lastPayloadRef = useRef('');
 
   const sortedArtists = useMemo(
     () => [...artists].sort((a, b) => a.stageName.localeCompare(b.stageName)),
@@ -60,6 +76,128 @@ export default function App() {
     () => buildPlanDays(sortedTasks, sortedReleases, sortedArtists, dayCompletions),
     [sortedTasks, sortedReleases, sortedArtists, dayCompletions],
   );
+  const workspaceSnapshot = useMemo(
+    () => normalizeWorkspace({ artists, releases, tasks, dayCompletions }),
+    [artists, releases, tasks, dayCompletions],
+  );
+
+  useEffect(() => {
+    if (!auth.configured) {
+      setCloudState({ loading: false, ready: true, saving: false, error: '', lastSaved: '' });
+      return undefined;
+    }
+
+    if (auth.loading) return undefined;
+
+    if (!auth.user?.id) {
+      if (hydratedUserRef.current) {
+        setArtists([]);
+        setReleases([]);
+        setTasks([]);
+        setDayCompletions({});
+      }
+
+      hydratedUserRef.current = '';
+      lastPayloadRef.current = '';
+      window.clearTimeout(saveTimerRef.current);
+      setCloudState({ loading: false, ready: false, saving: false, error: '', lastSaved: '' });
+      return undefined;
+    }
+
+    let cancelled = false;
+    const localSnapshot = normalizeWorkspace({ artists, releases, tasks, dayCompletions });
+
+    setCloudState((current) => ({ ...current, loading: true, ready: false, error: '' }));
+
+    loadWorkspace(auth.user.id)
+      .then(({ workspace, exists, updatedAt }) => {
+        if (cancelled) return;
+
+        const shouldImportLocal = !exists && hasWorkspaceData(localSnapshot);
+        const nextWorkspace = shouldImportLocal ? localSnapshot : workspace;
+
+        setArtists(nextWorkspace.artists);
+        setReleases(nextWorkspace.releases);
+        setTasks(nextWorkspace.tasks);
+        setDayCompletions(nextWorkspace.dayCompletions);
+
+        hydratedUserRef.current = auth.user.id;
+        lastPayloadRef.current = JSON.stringify(nextWorkspace);
+        setCloudState({
+          loading: false,
+          ready: true,
+          saving: shouldImportLocal,
+          error: '',
+          lastSaved: updatedAt || '',
+        });
+
+        if (shouldImportLocal) {
+          saveWorkspace(auth.user.id, nextWorkspace)
+            .then((savedAt) => {
+              if (!cancelled) {
+                setCloudState((current) => ({ ...current, saving: false, lastSaved: savedAt }));
+              }
+            })
+            .catch((error) => {
+              if (!cancelled) {
+                setCloudState((current) => ({ ...current, saving: false, error: error.message }));
+              }
+            });
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        hydratedUserRef.current = '';
+        setCloudState({
+          loading: false,
+          ready: false,
+          saving: false,
+          error: error.message || 'Não foi possível carregar os dados na nuvem.',
+          lastSaved: '',
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // A hidratação deve acontecer apenas ao trocar usuário ou ao clicar em tentar novamente.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.configured, auth.loading, auth.user?.id, workspaceReloadKey]);
+
+  useEffect(() => {
+    if (
+      !auth.configured ||
+      !auth.user?.id ||
+      !cloudState.ready ||
+      cloudState.loading ||
+      hydratedUserRef.current !== auth.user.id
+    ) {
+      return undefined;
+    }
+
+    const payload = JSON.stringify(workspaceSnapshot);
+    if (payload === lastPayloadRef.current) return undefined;
+
+    window.clearTimeout(saveTimerRef.current);
+    setCloudState((current) => ({ ...current, saving: true, error: '' }));
+
+    saveTimerRef.current = window.setTimeout(() => {
+      saveWorkspace(auth.user.id, workspaceSnapshot)
+        .then((savedAt) => {
+          lastPayloadRef.current = payload;
+          setCloudState((current) => ({ ...current, saving: false, lastSaved: savedAt }));
+        })
+        .catch((error) => {
+          setCloudState((current) => ({
+            ...current,
+            saving: false,
+            error: error.message || 'Não foi possível salvar na nuvem.',
+          }));
+        });
+    }, 650);
+
+    return () => window.clearTimeout(saveTimerRef.current);
+  }, [auth.configured, auth.user?.id, cloudState.loading, cloudState.ready, workspaceSnapshot]);
 
   function saveArtist(artist) {
     const normalized = {
@@ -188,7 +326,8 @@ export default function App() {
   }
 
   function clearData() {
-    if (!window.confirm('Apagar artistas, lançamentos e orientações salvos neste navegador?')) return;
+    const target = auth.configured ? 'da sua conta em nuvem e deste navegador' : 'salvos neste navegador';
+    if (!window.confirm(`Apagar artistas, lançamentos e orientações ${target}?`)) return;
     setArtists([]);
     setReleases([]);
     setTasks([]);
@@ -198,6 +337,19 @@ export default function App() {
 
   function exportCsv() {
     exportTasksCsv(planDays);
+  }
+
+  async function handleSignOut() {
+    if (auth.configured && auth.user?.id && cloudState.ready) {
+      window.clearTimeout(saveTimerRef.current);
+      try {
+        await saveWorkspace(auth.user.id, workspaceSnapshot);
+      } catch {
+        // O logout não deve prender o usuário se houver uma falha momentânea de rede.
+      }
+    }
+
+    await auth.signOut();
   }
 
   const commonProps = {
@@ -251,12 +403,51 @@ export default function App() {
     settings: (
       <SettingsPage
         {...commonProps}
+        cloudState={cloudState}
+        userEmail={auth.userEmail}
+        isCloudConfigured={auth.configured}
+        onSignOut={handleSignOut}
         onLoadDemo={loadDemoData}
         onClearData={clearData}
         onRegenerateAll={regenerateAllCalendars}
       />
     ),
   };
+
+  if (auth.configured && (auth.loading || (auth.session && cloudState.loading && !cloudState.ready))) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-card loading-card">
+          <div className="brand-mark auth-brand" />
+          <span className="eyebrow">Artist Release Hub Cloud</span>
+          <h1>Carregando seus dados</h1>
+          <p>Conectando login, banco e calendário de lançamentos.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (auth.configured && !auth.session) {
+    return (
+      <AuthPage
+        configured={auth.configured}
+        loading={auth.loading}
+        authError={auth.authError}
+        onSignIn={auth.signIn}
+        onSignUp={auth.signUp}
+      />
+    );
+  }
+
+  if (auth.configured && auth.session && cloudState.error && !cloudState.ready) {
+    return (
+      <CloudSetupPage
+        error={cloudState.error}
+        onRetry={() => setWorkspaceReloadKey((current) => current + 1)}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
 
   return (
     <div className="app-shell">
@@ -265,6 +456,10 @@ export default function App() {
         onChangePage={setActivePage}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
+        cloudState={cloudState}
+        isCloudConfigured={auth.configured}
+        userEmail={auth.userEmail}
+        onSignOut={handleSignOut}
       />
       <main className="main-area">{pages[activePage]}</main>
     </div>

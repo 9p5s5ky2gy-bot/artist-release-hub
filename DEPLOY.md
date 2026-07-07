@@ -1,54 +1,66 @@
-# Publicar o Artist Release Hub na nuvem
+﻿# Publicar o Artist Release Hub
 
-Este projeto está pronto para publicar na Vercel como um app React/Vite.
+O app está preparado para GitHub Pages, Vercel ou Cloudflare Pages. Neste projeto, o caminho atual é GitHub Pages.
 
-## Importante sobre os dados
+## GitHub Pages com login Supabase
 
-Nesta versão, os dados ficam no `localStorage` do navegador.
+Antes de publicar, configure os secrets no GitHub:
 
-Isso significa:
-
-- O app publicado abre por link em qualquer dispositivo.
-- Cada navegador terá seus próprios dados locais.
-- Para sincronizar dados entre computador e celular, ou entre vários usuários, a próxima etapa é adicionar banco de dados, como Supabase.
-
-## Opção recomendada: Vercel + GitHub
-
-### 1. Criar uma conta
-
-Crie ou acesse:
-
-- GitHub: https://github.com
-- Vercel: https://vercel.com
-
-### 2. Subir o projeto para o GitHub
-
-No GitHub, crie um repositório novo, por exemplo:
+1. Abra o repositório `9p5s5ky2gy-bot/artist-release-hub`.
+2. Vá em **Settings**.
+3. Entre em **Secrets and variables** > **Actions**.
+4. Clique em **New repository secret**.
+5. Adicione:
 
 ```text
-artist-release-hub
+VITE_SUPABASE_URL=https://jdqydenrxecchzhvanwe.supabase.co
 ```
 
-Depois, no terminal dentro desta pasta do projeto, rode:
+6. Adicione outro secret:
+
+```text
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_r_DHhkPpoyNyCvurlhqrJA_CgpU34vQ
+```
+
+Depois:
+
+1. Vá em **Actions**.
+2. Abra **Deploy to GitHub Pages**.
+3. Clique em **Run workflow**.
+4. Aguarde o build terminar.
+
+Link do app:
+
+```text
+https://9p5s5ky2gy-bot.github.io/artist-release-hub/
+```
+
+## Supabase
+
+O app só salva dados na nuvem depois que o SQL em `supabase/schema.sql` for executado no Supabase.
+
+Veja o guia completo em `SUPABASE_SETUP.md`.
+
+## Rodar localmente
 
 ```bash
-git init
-git add .
-git commit -m "Primeira versão do Artist Release Hub"
-git branch -M main
-git remote add origin https://github.com/SEU_USUARIO/artist-release-hub.git
-git push -u origin main
+npm install
+npm run dev
 ```
 
-Troque `SEU_USUARIO` pelo seu usuário do GitHub.
+## Build local
 
-### 3. Importar na Vercel
+```bash
+npm run build
+npm run preview
+```
 
-1. Entre em https://vercel.com.
-2. Clique em **Add New Project**.
-3. Escolha o repositório `artist-release-hub`.
-4. A Vercel deve detectar Vite automaticamente.
-5. Confira as configurações:
+## Vercel alternativa
+
+Se preferir Vercel:
+
+1. Importe o repositório na Vercel.
+2. Use:
 
 ```text
 Framework Preset: Vite
@@ -57,57 +69,11 @@ Output Directory: dist
 Install Command: npm install
 ```
 
-6. Clique em **Deploy**.
-
-### 4. Abrir o link
-
-Quando terminar, a Vercel vai gerar um link parecido com:
+3. Em **Environment Variables**, adicione:
 
 ```text
-https://artist-release-hub.vercel.app
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
-Esse será o link para acessar o painel na nuvem.
-
-## Opção alternativa: Vercel CLI
-
-Se preferir publicar pelo terminal:
-
-```bash
-npm install
-npm run build
-npx vercel
-```
-
-Na primeira vez, a Vercel vai pedir login e algumas confirmações.
-
-Para publicar em produção:
-
-```bash
-npx vercel --prod
-```
-
-## Arquivo de configuração criado
-
-O arquivo `vercel.json` foi adicionado para garantir que o app React/Vite funcione como SPA. Isso evita erro ao abrir links internos diretamente.
-
-## Como testar antes de publicar
-
-```bash
-npm install
-npm run build
-npm run preview
-```
-
-Se o preview abrir normalmente, o projeto está pronto para deploy.
-
-## Próxima etapa para virar produto completo
-
-Para vender para artistas ou usar em vários dispositivos com os mesmos dados, recomendo a próxima fase:
-
-- login;
-- Supabase;
-- salvamento em banco;
-- upload de capas;
-- domínio personalizado;
-- backups.
+4. Clique em **Deploy**.

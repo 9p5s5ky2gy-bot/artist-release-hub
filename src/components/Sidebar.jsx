@@ -5,6 +5,7 @@
   Disc3,
   LayoutDashboard,
   Link2,
+  LogOut,
   Menu,
   Mic2,
   Settings,
@@ -35,7 +36,23 @@ const navigationGroups = [
   },
 ];
 
-export function Sidebar({ activePage, onChangePage, mobileOpen, setMobileOpen }) {
+function getCloudLabel(isCloudConfigured, cloudState) {
+  if (!isCloudConfigured) return 'Dados locais';
+  if (cloudState?.saving) return 'Salvando na nuvem';
+  if (cloudState?.error) return 'Atenção na nuvem';
+  return 'Nuvem ativa';
+}
+
+export function Sidebar({
+  activePage,
+  onChangePage,
+  mobileOpen,
+  setMobileOpen,
+  cloudState,
+  isCloudConfigured,
+  userEmail,
+  onSignOut,
+}) {
   return (
     <>
       <button className="mobile-menu-button icon-button" onClick={() => setMobileOpen(true)} aria-label="Abrir menu" type="button">
@@ -84,9 +101,15 @@ export function Sidebar({ activePage, onChangePage, mobileOpen, setMobileOpen })
         <div className="sidebar-footer">
           <div>
             <BadgeCheck size={16} />
-            <span>Dados locais</span>
+            <span>{getCloudLabel(isCloudConfigured, cloudState)}</span>
           </div>
-          <strong>Pronto para evoluir</strong>
+          <strong>{userEmail || (isCloudConfigured ? 'Supabase conectado' : 'Pronto para evoluir')}</strong>
+          {isCloudConfigured && userEmail && (
+            <button className="text-button sidebar-logout" onClick={onSignOut} type="button">
+              <LogOut size={15} />
+              <span>Sair</span>
+            </button>
+          )}
         </div>
       </aside>
 
@@ -94,4 +117,3 @@ export function Sidebar({ activePage, onChangePage, mobileOpen, setMobileOpen })
     </>
   );
 }
-
