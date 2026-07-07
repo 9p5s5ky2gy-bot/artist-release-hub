@@ -1,0 +1,119 @@
+﻿import { Edit3, Mail, Phone, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { ArtistForm } from '../components/ArtistForm';
+import { ColorSwatches } from '../components/ColorSwatches';
+import { EmptyState } from '../components/EmptyState';
+import { ExternalLinkButton } from '../components/ExternalLinkButton';
+import { PageHeader } from '../components/PageHeader';
+import { StatusBadge } from '../components/StatusBadge';
+
+export function ArtistsPage({ artists, releases, onSave, onDelete }) {
+  const [editingArtist, setEditingArtist] = useState(null);
+  const [showForm, setShowForm] = useState(!artists.length);
+
+  function handleSave(artist) {
+    onSave(artist);
+    setEditingArtist(null);
+    setShowForm(false);
+  }
+
+  function requestDelete(artist) {
+    const totalReleases = releases.filter((release) => release.artistId === artist.id).length;
+    const message = totalReleases
+      ? `Excluir ${artist.stageName} também remove ${totalReleases} lançamento(s) e suas orientações. Continuar?`
+      : `Excluir ${artist.stageName}?`;
+    if (window.confirm(message)) onDelete(artist.id);
+  }
+
+  return (
+    <section className="page-content">
+      <PageHeader eyebrow="Catálogo" title="Artistas">
+        <button className="primary-button" onClick={() => setShowForm(true)}>
+          <Plus size={16} />
+          <span>Novo artista</span>
+        </button>
+      </PageHeader>
+
+      {showForm && (
+        <ArtistForm
+          editingArtist={editingArtist}
+          onSave={handleSave}
+          onCancel={() => {
+            setEditingArtist(null);
+            setShowForm(false);
+          }}
+        />
+      )}
+
+      <div className="entity-grid">
+        {artists.map((artist) => {
+          const releaseCount = releases.filter((release) => release.artistId === artist.id).length;
+          return (
+            <article className="artist-card" key={artist.id}>
+              <div className="artist-card-top">
+                <div>
+                  <span className="eyebrow">{artist.genre || 'Sem estilo'}</span>
+                  <h2>{artist.stageName}</h2>
+                  <p>{artist.archetype || 'Estética ainda não definida'}</p>
+                </div>
+                <StatusBadge>{releaseCount} lanç.</StatusBadge>
+              </div>
+
+              <ColorSwatches colors={artist.visualColors} />
+
+              <div className="meta-list">
+                {artist.legalName && <span>Responsável: {artist.legalName}</span>}
+                {artist.email && (
+                  <span>
+                    <Mail size={14} />
+                    {artist.email}
+                  </span>
+                )}
+                {artist.phone && (
+                  <span>
+                    <Phone size={14} />
+                    {artist.phone}
+                  </span>
+                )}
+              </div>
+
+              {artist.notes && <p className="card-note">{artist.notes}</p>}
+
+              <div className="link-row">
+                <ExternalLinkButton href={artist.instagram}>Instagram</ExternalLinkButton>
+                <ExternalLinkButton href={artist.tiktok}>TikTok</ExternalLinkButton>
+                <ExternalLinkButton href={artist.youtube}>YouTube</ExternalLinkButton>
+                <ExternalLinkButton href={artist.spotify}>Spotify</ExternalLinkButton>
+              </div>
+
+              <div className="card-actions">
+                <button
+                  className="secondary-button"
+                  onClick={() => {
+                    setEditingArtist(artist);
+                    setShowForm(true);
+                  }}
+                >
+                  <Edit3 size={15} />
+                  <span>Editar</span>
+                </button>
+                <button className="danger-button" onClick={() => requestDelete(artist)}>
+                  <Trash2 size={15} />
+                  <span>Excluir</span>
+                </button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      {!artists.length && !showForm && (
+        <EmptyState
+          title="Nenhum artista cadastrado"
+          action={<button className="secondary-button" onClick={() => setShowForm(true)}>Cadastrar artista</button>}
+        />
+      )}
+    </section>
+  );
+}
+
