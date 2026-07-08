@@ -136,35 +136,38 @@ function ScoreBox({ score }) {
 
 function PitchCard({ draft, score, copied, saved, onCopy, onChange, onSave, onRegenerate, onDelete }) {
   const [editing, setEditing] = useState(false);
-  const count = draft.text.length;
+  const textValue = String(draft?.text || '');
+  const characterLimit = Number(draft?.characterLimit) || 0;
+  const count = textValue.length;
+  const withinLimit = !characterLimit || count <= characterLimit;
 
   return (
     <article className="pitch-card">
       <div className="pitch-card-head">
         <div>
-          <span className="eyebrow">{draft.language === 'en' ? 'Inglês' : 'Português'}</span>
-          <h3>{draft.title}</h3>
+          <span className="eyebrow">{draft?.language === 'en' ? 'Inglês' : 'Português'}</span>
+          <h3>{draft?.title || 'Pitch salvo'}</h3>
         </div>
-        <StatusBadge tone={count <= draft.characterLimit ? 'mint' : 'red'}>
-          {count}/{draft.characterLimit || 'sem limite'}
+        <StatusBadge tone={withinLimit ? 'mint' : 'red'}>
+          {count}/{characterLimit || 'sem limite'}
         </StatusBadge>
       </div>
 
       {editing ? (
         <textarea
           className="pitch-editor"
-          value={draft.text}
+          value={textValue}
           onChange={(event) => onChange({ ...draft, text: event.target.value })}
           rows={8}
         />
       ) : (
-        <div className="pitch-text-preview">{draft.text}</div>
+        <div className="pitch-text-preview">{textValue || 'Sem texto salvo nesta versao.'}</div>
       )}
 
       <ScoreBox score={score} />
 
       <div className="pitch-card-actions">
-        <button className="secondary-button compact" onClick={() => onCopy(draft.text, draft.id)} type="button">
+        <button className="secondary-button compact" onClick={() => onCopy(textValue, draft.id)} type="button">
           <Copy size={14} />
           <span>{copied === draft.id ? 'Copiado' : 'Copiar'}</span>
         </button>
@@ -292,20 +295,23 @@ export function PitchingPage({
   }
 
   function updateDraft(nextDraft) {
+    const textValue = String(nextDraft.text || '');
     setDrafts((current) =>
       current.map((draft) =>
         draft.id === nextDraft.id
-          ? { ...nextDraft, characterCount: nextDraft.text.length, updatedAt: new Date().toISOString() }
+          ? { ...nextDraft, text: textValue, characterCount: textValue.length, updatedAt: new Date().toISOString() }
           : draft,
       ),
     );
   }
 
   function saveDraft(draft) {
+    const textValue = String(draft.text || '');
     onSavePitch({
       ...draft,
       id: createId('pitch'),
-      characterCount: draft.text.length,
+      text: textValue,
+      characterCount: textValue.length,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
@@ -313,7 +319,7 @@ export function PitchingPage({
 
   function regenerateDraft(draft) {
     const nextDraft = makeDraft(draft.type, draft.language);
-    if (!draft.id.startsWith('pitch-draft')) {
+    if (!String(draft.id || '').startsWith('pitch-draft')) {
       onUpdatePitch(draft.id, {
         ...nextDraft,
         id: draft.id,
@@ -326,11 +332,12 @@ export function PitchingPage({
   }
 
   async function copyText(value, id) {
+    const copyValue = String(value || '');
     try {
-      await navigator.clipboard.writeText(value);
+      await navigator.clipboard.writeText(copyValue);
     } catch {
       const textarea = document.createElement('textarea');
-      textarea.value = value;
+      textarea.value = copyValue;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand('copy');

@@ -453,17 +453,29 @@ export function getPitchDateAlert(releaseDate) {
 
 export function buildPitchExport({ context, drafts = [], playlists = [], checklist = {} }) {
   const checklistLines = pitchChecklistItems.map((item) => `${checklist[item.id] ? '[x]' : '[ ]'} ${item.label}`);
-  const playlistLines = playlists.map((item) => `- ${item.name} (${item.compatibility}): ${item.reason} Destaque: ${item.highlight}`);
-  const draftLines = drafts.map((draft) => `## ${draft.title}\n${draft.text}\nCaracteres: ${draft.text.length}/${draft.characterLimit || 'sem limite'}`);
+  const playlistLines = playlists.map((item) => {
+    const name = text(item?.name) || 'Playlist';
+    const compatibility = text(item?.compatibility) || 'referencia';
+    const reason = text(item?.reason) || 'Verificar compatibilidade com mood, idioma e energia.';
+    const highlight = text(item?.highlight) || 'Genero, mood e plano de divulgacao.';
+    return `- ${name} (${compatibility}): ${reason} Destaque: ${highlight}`;
+  });
+  const draftLines = drafts.map((draft) => {
+    const draftText = text(draft?.text);
+    const limit = draft?.characterLimit || 'sem limite';
+    return `## ${text(draft?.title) || 'Pitch salvo'}
+${draftText || 'Sem texto salvo nesta versao.'}
+Caracteres: ${draftText.length}/${limit}`;
+  });
 
   return [
     `Artist Release Hub - Pitching`,
-    `${context.artistName} - ${context.songTitle}`,
+    `${text(context?.artistName) || 'Artista'} - ${text(context?.songTitle) || 'Lancamento'}`,
     '',
     '## Pitches',
     draftLines.join('\n\n') || 'Nenhum pitch gerado ainda.',
     '',
-    '## Playlists compatíveis',
+    '## Playlists compativeis',
     playlistLines.join('\n') || 'Nenhuma playlist sugerida.',
     '',
     '## Checklist',
