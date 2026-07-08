@@ -12,6 +12,7 @@ export function PlatformArtistSearch({ stageName, onSelect }) {
   const [results, setResults] = useState([]);
   const [message, setMessage] = useState('');
   const [externalSearchUrl, setExternalSearchUrl] = useState('');
+  const [manualSpotifyUrl, setManualSpotifyUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -19,7 +20,7 @@ export function PlatformArtistSearch({ stageName, onSelect }) {
   }, [query, stageName]);
 
   async function handleSearch(event) {
-    event.preventDefault();
+    event?.preventDefault();
     setLoading(true);
     setMessage('');
     setResults([]);
@@ -38,6 +39,30 @@ export function PlatformArtistSearch({ stageName, onSelect }) {
     }
   }
 
+  function getSpotifyArtistId(url) {
+    const match = String(url || '').match(/open\.spotify\.com\/artist\/([^?/#]+)/i);
+    return match?.[1] || '';
+  }
+
+  function handleManualSpotifyLink() {
+    const url = manualSpotifyUrl.trim();
+    if (!url) {
+      setMessage('Cole o link do perfil do Spotify para vincular.');
+      return;
+    }
+
+    onSelect({
+      id: `spotify-manual-${Date.now()}`,
+      platform: 'Spotify',
+      platformId: getSpotifyArtistId(url),
+      name: query || stageName || 'Artista',
+      url,
+      image: '',
+      followers: null,
+    });
+    setMessage('Spotify vinculado. Salve o artista para manter a alteracao.');
+  }
+
   return (
     <section className="platform-search-panel">
       <div className="panel-heading">
@@ -48,27 +73,43 @@ export function PlatformArtistSearch({ stageName, onSelect }) {
         <Sparkles size={19} />
       </div>
 
-      <form className="platform-search-form" onSubmit={handleSearch}>
+      <div className="platform-search-form">
         <label>
           Nome para busca
           <span className="input-with-icon">
             <Search size={16} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nome artístico" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') handleSearch(event);
+              }}
+              placeholder="Nome artistico"
+            />
           </span>
         </label>
-        <button className="secondary-button" disabled={loading} type="submit">
+        <button className="secondary-button" disabled={loading} onClick={handleSearch} type="button">
           <Search size={16} />
           <span>{loading ? 'Buscando...' : 'Buscar'}</span>
         </button>
-      </form>
+      </div>
 
       {message && <p className="platform-search-message">{message}</p>}
 
       {externalSearchUrl && (
-        <a className="secondary-button compact external-search-link" href={externalSearchUrl} target="_blank" rel="noreferrer">
-          <ExternalLink size={15} />
-          <span>Abrir busca no Spotify</span>
-        </a>
+        <>
+          <a className="secondary-button compact external-search-link" href={externalSearchUrl} target="_blank" rel="noreferrer">
+            <ExternalLink size={15} />
+            <span>Abrir busca no Spotify</span>
+          </a>
+          <div className="platform-search-form">
+            <label>
+              Link do perfil no Spotify
+              <input value={manualSpotifyUrl} onChange={(event) => setManualSpotifyUrl(event.target.value)} placeholder="https://open.spotify.com/artist/..." />
+            </label>
+            <button className="secondary-button" onClick={handleManualSpotifyLink} type="button">Vincular Spotify</button>
+          </div>
+        </>
       )}
 
       {results.length > 0 && (
