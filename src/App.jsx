@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { DashboardPage } from './pages/DashboardPage';
 import { ArtistsPage } from './pages/ArtistsPage';
 import { ReleasesPage } from './pages/ReleasesPage';
+import { PitchingPage } from './pages/PitchingPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { TasksPage } from './pages/TasksPage';
 import { LinksPage } from './pages/LinksPage';
@@ -25,6 +26,9 @@ const STORAGE = {
   releases: 'artist-release-hub:releases',
   tasks: 'artist-release-hub:tasks',
   dayCompletions: 'artist-release-hub:day-completions',
+  pitching: 'artist-release-hub:pitching',
+  pitchBriefs: 'artist-release-hub:pitch-briefs',
+  pitchChecklists: 'artist-release-hub:pitch-checklists',
 };
 
 function sortByDate(items) {
@@ -52,6 +56,16 @@ function removeCompletionKeys(current, releaseIds) {
   );
 }
 
+
+function removePitchKeys(current, releaseIds = [], artistId = '') {
+  const releaseSet = new Set(releaseIds);
+  return Object.fromEntries(
+    Object.entries(current || {}).filter(([key]) => {
+      const [keyArtistId, keyReleaseId] = key.split(':');
+      return keyArtistId !== artistId && !releaseSet.has(keyReleaseId);
+    }),
+  );
+}
 function isOrientationCompleted(orientation) {
   const status = String(orientation?.status || '')
     .toLowerCase()
@@ -99,6 +113,9 @@ export default function App() {
   const [releases, setReleases] = useLocalStorage(STORAGE.releases, []);
   const [tasks, setTasks] = useLocalStorage(STORAGE.tasks, []);
   const [dayCompletions, setDayCompletions] = useLocalStorage(STORAGE.dayCompletions, {});
+  const [pitching, setPitching] = useLocalStorage(STORAGE.pitching, []);
+  const [pitchBriefs, setPitchBriefs] = useLocalStorage(STORAGE.pitchBriefs, {});
+  const [pitchChecklists, setPitchChecklists] = useLocalStorage(STORAGE.pitchChecklists, {});
   const auth = useSupabaseAuth();
   const [workspaceReloadKey, setWorkspaceReloadKey] = useState(0);
   const [cloudState, setCloudState] = useState({
@@ -123,8 +140,8 @@ export default function App() {
     [sortedTasks, sortedReleases, sortedArtists, dayCompletions],
   );
   const workspaceSnapshot = useMemo(
-    () => normalizeWorkspace({ artists, releases, tasks, dayCompletions }),
-    [artists, releases, tasks, dayCompletions],
+    () => normalizeWorkspace({ artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists }),
+    [artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists],
   );
 
   useEffect(() => {
@@ -141,6 +158,9 @@ export default function App() {
         setReleases([]);
         setTasks([]);
         setDayCompletions({});
+        setPitching([]);
+        setPitchBriefs({});
+        setPitchChecklists({});
       }
 
       hydratedUserRef.current = '';
@@ -151,7 +171,7 @@ export default function App() {
     }
 
     let cancelled = false;
-    const localSnapshot = normalizeWorkspace({ artists, releases, tasks, dayCompletions });
+    const localSnapshot = normalizeWorkspace({ artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists });
 
     setCloudState((current) => ({ ...current, loading: true, ready: false, error: '' }));
 
@@ -166,6 +186,9 @@ export default function App() {
         setReleases(nextWorkspace.releases);
         setTasks(nextWorkspace.tasks);
         setDayCompletions(nextWorkspace.dayCompletions);
+        setPitching(nextWorkspace.pitching);
+        setPitchBriefs(nextWorkspace.pitchBriefs);
+        setPitchChecklists(nextWorkspace.pitchChecklists);
 
         hydratedUserRef.current = auth.user.id;
         lastPayloadRef.current = JSON.stringify(nextWorkspace);
@@ -198,7 +221,7 @@ export default function App() {
           loading: false,
           ready: false,
           saving: false,
-          error: error.message || 'Não foi possível carregar os dados na nuvem.',
+          error: error.message || 'NÃ£o foi possÃ­vel carregar os dados na nuvem.',
           lastSaved: '',
         });
       });
@@ -206,7 +229,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-    // A hidratação deve acontecer apenas ao trocar usuário ou ao clicar em tentar novamente.
+    // A hidrataÃ§Ã£o deve acontecer apenas ao trocar usuÃ¡rio ou ao clicar em tentar novamente.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.configured, auth.loading, auth.user?.id, workspaceReloadKey]);
 
@@ -237,7 +260,7 @@ export default function App() {
           setCloudState((current) => ({
             ...current,
             saving: false,
-            error: error.message || 'Não foi possível salvar na nuvem.',
+            error: error.message || 'NÃ£o foi possÃ­vel salvar na nuvem.',
           }));
         });
     }, 650);
@@ -265,12 +288,15 @@ export default function App() {
     setReleases((current) => current.filter((release) => release.artistId !== artistId));
     setTasks((current) => current.filter((task) => task.artistId !== artistId && !releaseIds.includes(task.releaseId)));
     setDayCompletions((current) => removeCompletionKeys(current, releaseIds));
+    setPitching((current) => current.filter((item) => item.artistId !== artistId && !releaseIds.includes(item.releaseId)));
+    setPitchBriefs((current) => removePitchKeys(current, releaseIds, artistId));
+    setPitchChecklists((current) => removePitchKeys(current, releaseIds, artistId));
   }
 
   function saveRelease(release) {
     const songTitle = String(release?.songTitle || '').trim();
     if (!release?.artistId || !songTitle || !release?.releaseDate) {
-      throw new Error('Preencha artista, nome da música e data de lançamento.');
+      throw new Error('Preencha artista, nome da mÃºsica e data de lanÃ§amento.');
     }
     const shouldGenerateRandomPlan = Boolean(release.shouldGenerateRandomPlan);
     const existingRelease = releases.find((item) => item.id === release.id);
@@ -332,6 +358,9 @@ export default function App() {
     setReleases((current) => current.filter((release) => release.id !== releaseId));
     setTasks((current) => current.filter((task) => task.releaseId !== releaseId));
     setDayCompletions((current) => removeCompletionKeys(current, [releaseId]));
+    setPitching((current) => current.filter((item) => item.releaseId !== releaseId));
+    setPitchBriefs((current) => removePitchKeys(current, [releaseId]));
+    setPitchChecklists((current) => removePitchKeys(current, [releaseId]));
   }
 
   function setDayCompleted(releaseId, date, completed) {
@@ -372,10 +401,10 @@ export default function App() {
       artistId: release.artistId,
       title: cleanTitle,
       description: '',
-      type: 'orientação',
+      type: 'orientaÃ§Ã£o',
       date: day.date,
-      status: 'não concluído',
-      priority: 'média',
+      status: 'nÃ£o concluÃ­do',
+      priority: 'mÃ©dia',
       note: '',
       link: '',
       offset: typeof day.offset === 'number' ? day.offset : diffInDays(day.date, release.releaseDate),
@@ -401,10 +430,10 @@ export default function App() {
     const manualWarning = Boolean(orientation.manuallyEdited || orientation.templateId === 'custom' || !orientation.generatedPlan);
     const completedWarning = dayCompleted || isOrientationCompleted(orientation);
     const message = [
-      `Trocar somente a Ação ${actionNumber} deste dia?`,
-      'As outras ações do dia, outros dias, capa, links e checklist serão mantidos.',
-      completedWarning ? 'Este dia/ação está marcado como concluído. A conclusão será mantida, mas o texto da ação será substituído.' : '',
-      manualWarning ? 'Se você editou esta sugestão manualmente, o texto atual será perdido.' : '',
+      `Trocar somente a AÃ§Ã£o ${actionNumber} deste dia?`,
+      'As outras aÃ§Ãµes do dia, outros dias, capa, links e checklist serÃ£o mantidos.',
+      completedWarning ? 'Este dia/aÃ§Ã£o estÃ¡ marcado como concluÃ­do. A conclusÃ£o serÃ¡ mantida, mas o texto da aÃ§Ã£o serÃ¡ substituÃ­do.' : '',
+      manualWarning ? 'Se vocÃª editou esta sugestÃ£o manualmente, o texto atual serÃ¡ perdido.' : '',
     ]
       .filter(Boolean)
       .join('\n\n');
@@ -446,7 +475,7 @@ export default function App() {
   function generateRandomPlanForRelease(releaseId) {
     const release = releases.find((item) => item.id === releaseId);
     if (!release) return;
-    if (!window.confirm('Gerar novas sugestões IA e substituir as orientações atuais deste lançamento?')) return;
+    if (!window.confirm('Gerar novas sugestÃµes IA e substituir as orientaÃ§Ãµes atuais deste lanÃ§amento?')) return;
 
     const seed = Date.now();
     const randomRelease = {
@@ -469,7 +498,7 @@ export default function App() {
   function clearGeneratedPlanForRelease(releaseId) {
     const release = releases.find((item) => item.id === releaseId);
     if (!release) return;
-    if (!window.confirm('Limpar as sugestões IA deste lançamento?')) return;
+    if (!window.confirm('Limpar as sugestÃµes IA deste lanÃ§amento?')) return;
 
     setReleases((current) =>
       current.map((item) =>
@@ -521,19 +550,79 @@ export default function App() {
     setReleases(demo.releases);
     setTasks(demo.tasks);
     setDayCompletions(demo.dayCompletions || {});
+    setPitching([]);
+    setPitchBriefs({});
+    setPitchChecklists({});
     setActivePage('dashboard');
   }
 
   function clearData() {
     const target = auth.configured ? 'da sua conta em nuvem e deste navegador' : 'salvos neste navegador';
-    if (!window.confirm(`Apagar artistas, lançamentos e orientações ${target}?`)) return;
+    if (!window.confirm(`Apagar artistas, lanÃ§amentos e orientaÃ§Ãµes ${target}?`)) return;
     setArtists([]);
     setReleases([]);
     setTasks([]);
     setDayCompletions({});
+    setPitching([]);
+    setPitchBriefs({});
+    setPitchChecklists({});
     setActivePage('dashboard');
   }
 
+
+  function savePitchVersion(version) {
+    const normalized = {
+      ...version,
+      id: version.id || createId('pitch'),
+      characterCount: String(version.text || '').length,
+      createdAt: version.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setPitching((current) => [normalized, ...current]);
+  }
+
+  function updatePitchVersion(versionId, patch) {
+    setPitching((current) =>
+      current.map((item) =>
+        item.id === versionId
+          ? {
+              ...item,
+              ...patch,
+              id: versionId,
+              characterCount: String(patch.text ?? item.text ?? '').length,
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      ),
+    );
+  }
+
+  function deletePitchVersion(versionId) {
+    if (!window.confirm('Excluir esta versão de pitch?')) return;
+    setPitching((current) => current.filter((item) => item.id !== versionId));
+  }
+
+  function savePitchBrief(key, patch) {
+    setPitchBriefs((current) => ({
+      ...current,
+      [key]: {
+        ...(current[key] || {}),
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      },
+    }));
+  }
+
+  function setPitchChecklistItem(key, itemId, checked) {
+    setPitchChecklists((current) => ({
+      ...current,
+      [key]: {
+        ...(current[key] || {}),
+        [itemId]: checked,
+        updatedAt: new Date().toISOString(),
+      },
+    }));
+  }
   function exportCsv() {
     exportTasksCsv(planDays);
   }
@@ -544,7 +633,7 @@ export default function App() {
       try {
         await saveWorkspace(auth.user.id, workspaceSnapshot);
       } catch {
-        // O logout não deve prender o usuário se houver uma falha momentânea de rede.
+        // O logout nÃ£o deve prender o usuÃ¡rio se houver uma falha momentÃ¢nea de rede.
       }
     }
 
@@ -557,6 +646,9 @@ export default function App() {
     tasks: sortedTasks,
     planDays,
     dayCompletions,
+    pitching,
+    pitchBriefs,
+    pitchChecklists,
   };
 
   const dayActions = {
@@ -585,6 +677,16 @@ export default function App() {
         onGenerateRandomPlan={generateRandomPlanForRelease}
         onClearGeneratedPlan={clearGeneratedPlanForRelease}
         onNavigate={setActivePage}
+      />
+    ),
+    pitching: (
+      <PitchingPage
+        {...commonProps}
+        onSavePitch={savePitchVersion}
+        onUpdatePitch={updatePitchVersion}
+        onDeletePitch={deletePitchVersion}
+        onSaveBrief={savePitchBrief}
+        onSetPitchChecklist={setPitchChecklistItem}
       />
     ),
     calendar: (
@@ -623,7 +725,7 @@ export default function App() {
           <div className="brand-mark auth-brand" />
           <span className="eyebrow">Artist Release Hub Cloud</span>
           <h1>Carregando seus dados</h1>
-          <p>Conectando login, banco e calendário de lançamentos.</p>
+          <p>Conectando login, banco e calendÃ¡rio de lanÃ§amentos.</p>
         </section>
       </main>
     );

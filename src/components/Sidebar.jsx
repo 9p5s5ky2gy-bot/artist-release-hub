@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadgeCheck,
   CalendarDays,
   CheckSquare,
@@ -8,6 +8,7 @@
   LogOut,
   Menu,
   Mic2,
+  Send,
   Settings,
   Sparkles,
   X,
@@ -27,6 +28,7 @@ const navigationGroups = [
     items: [
       { id: 'artists', label: 'Artistas', icon: Mic2 },
       { id: 'releases', label: 'Lançamentos', icon: Disc3 },
+      { id: 'pitching', label: 'Pitching', icon: Send },
       { id: 'links', label: 'Links', icon: Link2 },
     ],
   },
