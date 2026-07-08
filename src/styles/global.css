@@ -803,6 +803,13 @@ textarea:focus {
   font-weight: 750;
 }
 
+.release-submit-button {
+  position: relative;
+  z-index: 4;
+  touch-action: manipulation;
+  pointer-events: auto;
+}
+
 .release-form-layout {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);

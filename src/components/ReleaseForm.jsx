@@ -139,7 +139,7 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
   }
 
   return (
-    <form className="form-panel" onSubmit={handleSubmit}>
+    <form className="form-panel" noValidate onSubmit={handleSubmit}>
       <div className="form-heading">
         <div>
           <span className="eyebrow">{editingRelease ? 'Editar lançamento' : 'Novo lançamento'}</span>
@@ -273,7 +273,7 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
       {submitError && <p className="form-error" role="alert">{submitError}</p>}
 
       <div className="form-actions">
-        <button className="primary-button" type="submit" disabled={!artists.length}>
+        <button className="primary-button release-submit-button" formNoValidate type="button" onClick={handleSubmit}>
           <Save size={16} />
           <span>{editingRelease ? 'Salvar lançamento' : 'Cadastrar lançamento'}</span>
         </button>
