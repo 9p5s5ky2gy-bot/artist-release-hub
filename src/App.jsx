@@ -499,12 +499,15 @@ export default function App() {
 
   function regenerateAllCalendars() {
     setTasks((current) => {
-      const nextTasks = releases.flatMap((release) =>
-        generateTasksForRelease(
-          release,
-          current.filter((task) => task.releaseId === release.id),
-        ),
-      );
+      const nextTasks = releases.flatMap((release) => {
+        const existingForRelease = current.filter((task) => task.releaseId === release.id);
+        if (hasRandomPlan(release, existingForRelease)) {
+          const artist = artists.find((item) => item.id === release.artistId);
+          return generateRandomActionsForRelease(release, artist, release.randomPlanSeed || Date.now());
+        }
+
+        return generateTasksForRelease(release, existingForRelease);
+      });
       return sortByDate(nextTasks);
     });
   }

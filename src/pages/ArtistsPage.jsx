@@ -1,5 +1,5 @@
-﻿import { Edit3, Mail, Music2, Phone, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Edit3, Mail, Music2, Phone, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { ArtistForm } from '../components/ArtistForm';
 import { ColorSwatches } from '../components/ColorSwatches';
 import { EmptyState } from '../components/EmptyState';
@@ -10,6 +10,19 @@ import { StatusBadge } from '../components/StatusBadge';
 export function ArtistsPage({ artists, releases, onSave, onDelete }) {
   const [editingArtist, setEditingArtist] = useState(null);
   const [showForm, setShowForm] = useState(!artists.length);
+  const [formVersion, setFormVersion] = useState(0);
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    if (!showForm || !formRef.current) return;
+    formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [showForm, editingArtist?.id, formVersion]);
+
+  function openNewArtist() {
+    setEditingArtist(null);
+    setFormVersion((version) => version + 1);
+    setShowForm(true);
+  }
 
   function handleSave(artist) {
     onSave(artist);
@@ -28,21 +41,24 @@ export function ArtistsPage({ artists, releases, onSave, onDelete }) {
   return (
     <section className="page-content">
       <PageHeader eyebrow="Catálogo" title="Artistas">
-        <button className="primary-button" onClick={() => setShowForm(true)} type="button">
+        <button className="primary-button" onClick={openNewArtist} type="button">
           <Plus size={16} />
           <span>Novo artista</span>
         </button>
       </PageHeader>
 
       {showForm && (
-        <ArtistForm
-          editingArtist={editingArtist}
-          onSave={handleSave}
-          onCancel={() => {
-            setEditingArtist(null);
-            setShowForm(false);
-          }}
-        />
+        <div ref={formRef}>
+          <ArtistForm
+            key={editingArtist?.id || 'new-artist-' + formVersion}
+            editingArtist={editingArtist}
+            onSave={handleSave}
+            onCancel={() => {
+              setEditingArtist(null);
+              setShowForm(false);
+            }}
+          />
+        </div>
       )}
 
       <div className="entity-grid">
@@ -119,7 +135,7 @@ export function ArtistsPage({ artists, releases, onSave, onDelete }) {
       {!artists.length && !showForm && (
         <EmptyState
           title="Nenhum artista cadastrado"
-          action={<button className="secondary-button" onClick={() => setShowForm(true)} type="button">Cadastrar artista</button>}
+          action={<button className="secondary-button" onClick={openNewArtist} type="button">Cadastrar artista</button>}
         />
       )}
     </section>

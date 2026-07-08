@@ -18,12 +18,20 @@ export function useSupabaseAuth() {
 
     let active = true;
 
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (!active) return;
-      if (error) setAuthError(error.message);
-      setSession(data?.session || null);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) setAuthError(error.message);
+        setSession(data?.session || null);
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setAuthError(error?.message || 'Não foi possível carregar a sessão. Tente recarregar a página.');
+        setSession(null);
+        setLoading(false);
+      });
 
     const {
       data: { subscription },

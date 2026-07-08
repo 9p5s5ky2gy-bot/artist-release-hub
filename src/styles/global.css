@@ -1588,6 +1588,11 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
+  .release-card-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .mobile-task-list {
     display: grid;
     gap: 12px;
@@ -2471,10 +2476,15 @@ textarea:focus {
 
   .orientation-card-head {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .orientation-card-labels,
+  .orientation-card-actions {
+    width: 100%;
   }
 
   .orientation-card-actions {
-    width: 100%;
     margin-left: 0;
   }
 

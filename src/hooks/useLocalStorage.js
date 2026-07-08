@@ -11,7 +11,11 @@ export function useLocalStorage(key, initialValue) {
   });
 
   useEffect(() => {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.warn('Não foi possível salvar no localStorage.', error);
+    }
   }, [key, value]);
 
   return [value, setValue];

@@ -1,4 +1,4 @@
-﻿export const emptyTaskFilters = {
+export const emptyTaskFilters = {
   artistId: '',
   releaseId: '',
   completion: '',
@@ -19,7 +19,7 @@ export function applyTaskFilters(tasks, filters) {
     const matchesPriority = !filters.priority || task.priority === filters.priority;
     const matchesSearch =
       !search ||
-      task.title.toLowerCase().includes(search) ||
+      String(task.title || '').toLowerCase().includes(search) ||
       (task.description || '').toLowerCase().includes(search) ||
       (task.type || '').toLowerCase().includes(search);
 
@@ -42,9 +42,9 @@ export function applyPlanDayFilters(planDays, filters) {
     const matchesPriority = !filters.priority || day.orientations.some((item) => item.priority === filters.priority);
     const matchesSearch =
       !search ||
-      day.release.songTitle.toLowerCase().includes(search) ||
+      String(day.release?.songTitle || '').toLowerCase().includes(search) ||
       (day.artist?.stageName || '').toLowerCase().includes(search) ||
-      day.phase.toLowerCase().includes(search) ||
+      String(day.phase || '').toLowerCase().includes(search) ||
       day.orientations.some((item) =>
         `${item.title} ${item.description || ''} ${item.type || ''}`.toLowerCase().includes(search),
       );

@@ -1,4 +1,4 @@
-﻿import { Save, X } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PlatformArtistSearch } from './PlatformArtistSearch';
 
@@ -30,12 +30,15 @@ function normalizeArtist(artist) {
 
 export function ArtistForm({ editingArtist, onSave, onCancel }) {
   const [form, setForm] = useState(emptyArtist);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     setForm(normalizeArtist(editingArtist));
+    setSubmitError('');
   }, [editingArtist]);
 
   function updateField(event) {
+    setSubmitError('');
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
   }
@@ -56,13 +59,24 @@ export function ArtistForm({ editingArtist, onSave, onCancel }) {
 
   function handleSubmit(event) {
     event.preventDefault();
-    if (!form.stageName.trim()) return;
-    onSave(form);
-    setForm(emptyArtist);
+    const stageName = form.stageName.trim();
+
+    if (!stageName) {
+      setSubmitError('Digite o nome artístico antes de cadastrar.');
+      return;
+    }
+
+    try {
+      onSave({ ...form, stageName });
+      setForm(emptyArtist);
+      setSubmitError('');
+    } catch (error) {
+      setSubmitError(error?.message || 'Não foi possível salvar o artista. Revise os campos e tente novamente.');
+    }
   }
 
   return (
-    <form className="form-panel" onSubmit={handleSubmit}>
+    <form className="form-panel" noValidate onSubmit={handleSubmit}>
       <div className="form-heading">
         <div>
           <span className="eyebrow">{editingArtist ? 'Editar artista' : 'Novo artista'}</span>
@@ -136,8 +150,10 @@ export function ArtistForm({ editingArtist, onSave, onCancel }) {
         </label>
       </div>
 
+      {submitError && <p className="form-error" role="alert">{submitError}</p>}
+
       <div className="form-actions">
-        <button className="primary-button" type="submit">
+        <button className="primary-button" formNoValidate type="button" onClick={handleSubmit}>
           <Save size={16} />
           <span>{editingArtist ? 'Salvar artista' : 'Cadastrar artista'}</span>
         </button>
