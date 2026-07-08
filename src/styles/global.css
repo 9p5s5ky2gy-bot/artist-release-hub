@@ -2789,3 +2789,313 @@ textarea:focus {
     width: 100%;
   }
 }
+
+
+/* Artist execution view */
+.artist-view-page {
+  gap: 20px;
+}
+
+.artist-view-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.artist-view-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.artist-view-profile {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.artist-view-profile .cover-image,
+.artist-view-profile .cover-placeholder {
+  width: 128px;
+  height: 128px;
+}
+
+.artist-view-profile h2,
+.artist-view-release-card h2,
+.artist-view-progress-card h2,
+.artist-view-today-card h2,
+.artist-view-next-card h2,
+.artist-view-links-panel h2,
+.artist-view-pitch-panel h2,
+.artist-view-checklist-panel h2 {
+  line-height: 1.16;
+  overflow-wrap: anywhere;
+}
+
+.artist-view-profile p,
+.artist-view-editorial p,
+.artist-view-action p,
+.artist-view-pitch-panel p {
+  color: var(--muted);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.artist-view-profile p {
+  margin-top: 8px;
+}
+
+.artist-view-editorial {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  border: 1px solid rgba(101, 230, 173, 0.16);
+  border-radius: var(--radius);
+  background: rgba(101, 230, 173, 0.055);
+  padding: 16px;
+}
+
+.artist-view-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.artist-view-release-grid,
+.artist-view-today-grid,
+.artist-view-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 16px;
+}
+
+.artist-view-lower-grid {
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.85fr) minmax(280px, 0.7fr);
+}
+
+.artist-view-release-card {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.artist-view-release-card .cover-image,
+.artist-view-release-card .cover-placeholder {
+  width: 150px;
+  height: 150px;
+}
+
+.artist-view-release-card p {
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.artist-view-progress-card,
+.artist-view-today-card,
+.artist-view-next-card,
+.artist-view-links-panel,
+.artist-view-pitch-panel,
+.artist-view-checklist-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.artist-view-progress-card .panel-heading svg,
+.artist-view-next-card .panel-heading svg,
+.artist-view-links-panel .panel-heading svg,
+.artist-view-pitch-panel .panel-heading svg,
+.artist-view-checklist-panel .panel-heading svg {
+  color: var(--mint);
+}
+
+.artist-view-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.artist-view-metric {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 12px;
+}
+
+.artist-view-metric span,
+.artist-view-next-item span,
+.artist-view-link-card span,
+.artist-view-link-card small {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.artist-view-metric strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.6rem;
+}
+
+.artist-view-action {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(104, 199, 255, 0.16);
+  border-radius: var(--radius);
+  background: rgba(104, 199, 255, 0.055);
+  padding: 14px;
+}
+
+.artist-view-action > span {
+  color: var(--blue);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.artist-view-action strong {
+  font-size: 1.18rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.artist-view-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.artist-view-next-list,
+.artist-view-links-list,
+.artist-view-checklist {
+  display: grid;
+  gap: 10px;
+}
+
+.artist-view-next-item {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 12px;
+}
+
+.artist-view-next-item time {
+  color: var(--mint);
+  font-weight: 850;
+}
+
+.artist-view-next-item strong,
+.artist-view-next-item span,
+.artist-view-link-card strong,
+.artist-view-link-card span {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.artist-view-next-item span {
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
+.artist-view-link-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 12px;
+}
+
+.artist-view-link-card > div:last-of-type {
+  display: flex;
+  gap: 8px;
+}
+
+.artist-view-link-card small {
+  grid-column: 1 / -1;
+  color: var(--mint);
+  font-weight: 800;
+}
+
+.artist-view-pitch-panel p {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  background: rgba(9, 11, 15, 0.7);
+  padding: 14px;
+  white-space: pre-wrap;
+}
+
+.artist-view-checklist label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text);
+  cursor: pointer;
+  padding: 10px 12px;
+}
+
+.artist-view-checklist input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: var(--mint);
+}
+
+@media (max-width: 1180px) {
+  .artist-view-lower-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .artist-view-selector,
+  .artist-view-hero,
+  .artist-view-release-grid,
+  .artist-view-today-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .artist-view-profile,
+  .artist-view-release-card,
+  .artist-view-next-item,
+  .artist-view-link-card {
+    grid-template-columns: 1fr;
+  }
+
+  .artist-view-profile .cover-image,
+  .artist-view-profile .cover-placeholder,
+  .artist-view-release-card .cover-image,
+  .artist-view-release-card .cover-placeholder {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    max-height: 360px;
+  }
+
+  .artist-view-link-card > div:last-of-type {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .artist-view-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .artist-view-button-row .primary-button,
+  .artist-view-button-row .secondary-button {
+    width: 100%;
+  }
+}

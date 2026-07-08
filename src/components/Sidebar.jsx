@@ -3,6 +3,7 @@ import {
   CalendarDays,
   CheckSquare,
   Disc3,
+  Eye,
   LayoutDashboard,
   Link2,
   LogOut,
@@ -28,6 +29,7 @@ const navigationGroups = [
     items: [
       { id: 'artists', label: 'Artistas', icon: Mic2 },
       { id: 'releases', label: 'Lançamentos', icon: Disc3 },
+      { id: 'artistView', label: 'Visão do Artista', icon: Eye },
       { id: 'pitching', label: 'Pitching', icon: Send },
       { id: 'links', label: 'Links', icon: Link2 },
     ],

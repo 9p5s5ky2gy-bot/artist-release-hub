@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { DashboardPage } from './pages/DashboardPage';
 import { ArtistsPage } from './pages/ArtistsPage';
 import { ReleasesPage } from './pages/ReleasesPage';
+import { ArtistViewPage } from './pages/ArtistViewPage';
 import { PitchingPage } from './pages/PitchingPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { TasksPage } from './pages/TasksPage';
@@ -676,6 +677,14 @@ export default function App() {
         onRegenerate={regenerateRelease}
         onGenerateRandomPlan={generateRandomPlanForRelease}
         onClearGeneratedPlan={clearGeneratedPlanForRelease}
+        onNavigate={setActivePage}
+      />
+    ),
+    artistView: (
+      <ArtistViewPage
+        {...commonProps}
+        onSetDayCompleted={setDayCompleted}
+        onSetPitchChecklist={setPitchChecklistItem}
         onNavigate={setActivePage}
       />
     ),
