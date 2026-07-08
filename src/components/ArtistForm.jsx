@@ -1,5 +1,6 @@
-import { Save, X } from 'lucide-react';
+import { ImagePlus, Save, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { optimizeImageFile } from '../utils/image';
 import { PlatformArtistSearch } from './PlatformArtistSearch';
 
 const emptyArtist = {
@@ -11,6 +12,7 @@ const emptyArtist = {
   spotify: '',
   spotifyId: '',
   profileImage: '',
+  profileImageMeta: null,
   platformProfiles: {},
   email: '',
   phone: '',
@@ -32,10 +34,12 @@ function normalizeArtist(artist) {
 export function ArtistForm({ editingArtist, onSave, onCancel }) {
   const [form, setForm] = useState(emptyArtist);
   const [submitError, setSubmitError] = useState('');
+  const [profileStatus, setProfileStatus] = useState('');
 
   useEffect(() => {
     setForm(normalizeArtist(editingArtist));
     setSubmitError('');
+    setProfileStatus('');
   }, [editingArtist]);
 
   function updateField(event) {
@@ -56,6 +60,44 @@ export function ArtistForm({ editingArtist, onSave, onCancel }) {
         spotify: artist,
       },
     }));
+  }
+
+  async function uploadProfileImage(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setSubmitError('');
+    setProfileStatus('Otimizando foto...');
+
+    try {
+      const optimized = await optimizeImageFile(file, { maxSize: 600, quality: 0.76, type: 'image/webp' });
+      setForm((current) => ({
+        ...current,
+        profileImage: optimized.dataUrl,
+        profileImageMeta: {
+          name: file.name,
+          size: optimized.size,
+          width: optimized.width,
+          height: optimized.height,
+          type: optimized.type,
+          updatedAt: new Date().toISOString(),
+        },
+      }));
+      setProfileStatus('Foto pronta para salvar.');
+    } catch (error) {
+      setProfileStatus('');
+      setSubmitError(error?.message || 'Nao foi possivel carregar a foto. Tente outra imagem.');
+    }
+  }
+
+  function removeProfileImage() {
+    setForm((current) => ({
+      ...current,
+      profileImage: '',
+      profileImageMeta: null,
+    }));
+    setProfileStatus('Foto removida.');
   }
 
   function handleSubmit(event) {
@@ -121,10 +163,32 @@ export function ArtistForm({ editingArtist, onSave, onCancel }) {
           ID do Spotify
           <input name="spotifyId" value={form.spotifyId} onChange={updateField} placeholder="ID do artista no Spotify" />
         </label>
-        <label>
-          Foto do perfil
-          <input name="profileImage" value={form.profileImage} onChange={updateField} placeholder="https://..." />
-        </label>
+        <div className="artist-photo-field span-2">
+          <div className="artist-photo-preview" aria-label="Preview da foto do artista">
+            {form.profileImage ? (
+              <img src={form.profileImage} alt={form.stageName || 'Foto do artista'} />
+            ) : (
+              <ImagePlus size={24} />
+            )}
+          </div>
+          <div className="cover-uploader-fields">
+            <label className="upload-dropzone">
+              <Upload size={17} />
+              <span>Enviar foto do computador/celular</span>
+              <input accept="image/*" onChange={uploadProfileImage} type="file" />
+            </label>
+            {form.profileImage && (
+              <button className="secondary-button compact" onClick={removeProfileImage} type="button">
+                <Trash2 size={15} />
+                <span>Remover foto</span>
+              </button>
+            )}
+            <div className="cover-hint">
+              <ImagePlus size={16} />
+              <span>{profileStatus || 'A foto e salva otimizada dentro do JSON do workspace.'}</span>
+            </div>
+          </div>
+        </div>
         <label>
           E-mail
           <input type="email" name="email" value={form.email} onChange={updateField} />

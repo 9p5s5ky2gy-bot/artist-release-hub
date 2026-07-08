@@ -3099,3 +3099,40 @@ textarea:focus {
     width: 100%;
   }
 }
+
+.artist-photo-field {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.artist-photo-preview {
+  display: grid;
+  width: 96px;
+  height: 96px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(101, 230, 173, 0.14), rgba(95, 211, 255, 0.1));
+  color: var(--mint);
+}
+
+.artist-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 520px) {
+  .artist-photo-field {
+    grid-template-columns: 1fr;
+  }
+
+  .artist-photo-preview {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+}
