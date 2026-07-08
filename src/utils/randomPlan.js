@@ -204,7 +204,7 @@ function buildPool(phase, release, artist, offset = 0) {
     return pool.filter((action) => action[2] !== 'pré-save' && action[4] !== 'presaveLink');
   }
 
-  if (artist?.genre || artist?.archetype || release?.notes) {
+  if (artist?.genre || artist?.archetype || artist?.editorialLines || release?.notes) {
     pool.push(['Conteúdo contextual da era', 'Adapte a ação ao estilo, estética e narrativa do artista.', 'post', 'média']);
   }
 
@@ -218,7 +218,7 @@ function buildSmartSuggestion({ action, release, artist, phase, slot, random }) 
   const tip = pickFrom(tipsByType[type] || ['Mantenha a ação simples, visual e fácil de executar.'], random);
   const metric = metricsByType[type] || 'comentários, salvamentos e cliques';
   const objective = objectivesByPhase[phase] || 'avançar a estratégia do lançamento';
-  const artistContext = [artist?.genre, artist?.archetype, release?.notes]
+  const artistContext = [artist?.genre, artist?.archetype, artist?.editorialLines, release?.notes]
     .filter(Boolean)
     .join(' · ');
   const contextLine = artistContext ? `Contexto criativo: ${artistContext}. ` : '';

@@ -2,7 +2,7 @@ import { CalendarCheck, Save, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { releaseStatuses } from '../data/calendarTemplate';
 import { addDays, formatDateInput, getLastFridayOfMonth } from '../utils/date';
-import { releaseTypes } from '../utils/release';
+import { getDailyActionCount, releaseTypes } from '../utils/release';
 import { CoverUploader } from './CoverUploader';
 
 const emptyRelease = {
@@ -53,7 +53,7 @@ function normalizeFormRelease(release) {
     ...emptyRelease,
     ...(release || {}),
     releaseType: release?.releaseType || release?.type || 'Single',
-    dailyActionCount: Number(release?.dailyActionCount || release?.postsPerDay || 1),
+    dailyActionCount: getDailyActionCount(release),
     coverUrl: release?.coverUrl || release?.coverImageUrl || '',
     shouldGenerateRandomPlan: false,
   };
@@ -273,7 +273,7 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
       {submitError && <p className="form-error" role="alert">{submitError}</p>}
 
       <div className="form-actions">
-        <button className="primary-button release-submit-button" formNoValidate type="button" onClick={handleSubmit}>
+        <button className="primary-button release-submit-button" formNoValidate type="submit">
           <Save size={16} />
           <span>{editingRelease ? 'Salvar lançamento' : 'Cadastrar lançamento'}</span>
         </button>

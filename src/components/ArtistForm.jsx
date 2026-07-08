@@ -17,6 +17,7 @@ const emptyArtist = {
   notes: '',
   genre: '',
   archetype: '',
+  editorialLines: '',
   visualColors: '',
 };
 
@@ -141,6 +142,16 @@ export function ArtistForm({ editingArtist, onSave, onCancel }) {
           <input name="archetype" value={form.archetype} onChange={updateField} placeholder="Era futurista, romântico..." />
         </label>
         <label className="span-2">
+          Linhas editoriais
+          <textarea
+            name="editorialLines"
+            value={form.editorialLines}
+            onChange={updateField}
+            rows="3"
+            placeholder="Ex.: bastidores, estetica da era, humor, performance, interacao com fas"
+          />
+        </label>
+        <label className="span-2">
           Cores principais
           <input name="visualColors" value={form.visualColors} onChange={updateField} placeholder="#59e3a7, #ff6b6b, #15181f" />
         </label>
@@ -153,7 +164,7 @@ export function ArtistForm({ editingArtist, onSave, onCancel }) {
       {submitError && <p className="form-error" role="alert">{submitError}</p>}
 
       <div className="form-actions">
-        <button className="primary-button" formNoValidate type="button" onClick={handleSubmit}>
+        <button className="primary-button" formNoValidate type="submit">
           <Save size={16} />
           <span>{editingArtist ? 'Salvar artista' : 'Cadastrar artista'}</span>
         </button>
