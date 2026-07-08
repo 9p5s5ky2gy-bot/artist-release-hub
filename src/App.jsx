@@ -221,7 +221,7 @@ export default function App() {
           loading: false,
           ready: false,
           saving: false,
-          error: error.message || 'NÃ£o foi possÃ­vel carregar os dados na nuvem.',
+          error: error.message || 'Não foi possível carregar os dados na nuvem.',
           lastSaved: '',
         });
       });
@@ -229,7 +229,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-    // A hidrataÃ§Ã£o deve acontecer apenas ao trocar usuÃ¡rio ou ao clicar em tentar novamente.
+    // A hidratação deve acontecer apenas ao trocar usuário ou ao clicar em tentar novamente.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.configured, auth.loading, auth.user?.id, workspaceReloadKey]);
 
@@ -260,7 +260,7 @@ export default function App() {
           setCloudState((current) => ({
             ...current,
             saving: false,
-            error: error.message || 'NÃ£o foi possÃ­vel salvar na nuvem.',
+            error: error.message || 'Não foi possível salvar na nuvem.',
           }));
         });
     }, 650);
@@ -296,7 +296,7 @@ export default function App() {
   function saveRelease(release) {
     const songTitle = String(release?.songTitle || '').trim();
     if (!release?.artistId || !songTitle || !release?.releaseDate) {
-      throw new Error('Preencha artista, nome da mÃºsica e data de lanÃ§amento.');
+      throw new Error('Preencha artista, nome da música e data de lançamento.');
     }
     const shouldGenerateRandomPlan = Boolean(release.shouldGenerateRandomPlan);
     const existingRelease = releases.find((item) => item.id === release.id);
@@ -401,10 +401,10 @@ export default function App() {
       artistId: release.artistId,
       title: cleanTitle,
       description: '',
-      type: 'orientaÃ§Ã£o',
+      type: 'orientação',
       date: day.date,
-      status: 'nÃ£o concluÃ­do',
-      priority: 'mÃ©dia',
+      status: 'não concluído',
+      priority: 'média',
       note: '',
       link: '',
       offset: typeof day.offset === 'number' ? day.offset : diffInDays(day.date, release.releaseDate),
@@ -430,10 +430,10 @@ export default function App() {
     const manualWarning = Boolean(orientation.manuallyEdited || orientation.templateId === 'custom' || !orientation.generatedPlan);
     const completedWarning = dayCompleted || isOrientationCompleted(orientation);
     const message = [
-      `Trocar somente a AÃ§Ã£o ${actionNumber} deste dia?`,
-      'As outras aÃ§Ãµes do dia, outros dias, capa, links e checklist serÃ£o mantidos.',
-      completedWarning ? 'Este dia/aÃ§Ã£o estÃ¡ marcado como concluÃ­do. A conclusÃ£o serÃ¡ mantida, mas o texto da aÃ§Ã£o serÃ¡ substituÃ­do.' : '',
-      manualWarning ? 'Se vocÃª editou esta sugestÃ£o manualmente, o texto atual serÃ¡ perdido.' : '',
+      `Trocar somente a Ação ${actionNumber} deste dia?`,
+      'As outras ações do dia, outros dias, capa, links e checklist serão mantidos.',
+      completedWarning ? 'Este dia/ação está marcado como concluído. A conclusão será mantida, mas o texto da ação será substituído.' : '',
+      manualWarning ? 'Se você editou esta sugestão manualmente, o texto atual será perdido.' : '',
     ]
       .filter(Boolean)
       .join('\n\n');
@@ -475,7 +475,7 @@ export default function App() {
   function generateRandomPlanForRelease(releaseId) {
     const release = releases.find((item) => item.id === releaseId);
     if (!release) return;
-    if (!window.confirm('Gerar novas sugestÃµes IA e substituir as orientaÃ§Ãµes atuais deste lanÃ§amento?')) return;
+    if (!window.confirm('Gerar novas sugestões IA e substituir as orientações atuais deste lançamento?')) return;
 
     const seed = Date.now();
     const randomRelease = {
@@ -498,7 +498,7 @@ export default function App() {
   function clearGeneratedPlanForRelease(releaseId) {
     const release = releases.find((item) => item.id === releaseId);
     if (!release) return;
-    if (!window.confirm('Limpar as sugestÃµes IA deste lanÃ§amento?')) return;
+    if (!window.confirm('Limpar as sugestões IA deste lançamento?')) return;
 
     setReleases((current) =>
       current.map((item) =>
@@ -558,7 +558,7 @@ export default function App() {
 
   function clearData() {
     const target = auth.configured ? 'da sua conta em nuvem e deste navegador' : 'salvos neste navegador';
-    if (!window.confirm(`Apagar artistas, lanÃ§amentos e orientaÃ§Ãµes ${target}?`)) return;
+    if (!window.confirm(`Apagar artistas, lançamentos e orientações ${target}?`)) return;
     setArtists([]);
     setReleases([]);
     setTasks([]);
@@ -633,7 +633,7 @@ export default function App() {
       try {
         await saveWorkspace(auth.user.id, workspaceSnapshot);
       } catch {
-        // O logout nÃ£o deve prender o usuÃ¡rio se houver uma falha momentÃ¢nea de rede.
+        // O logout não deve prender o usuário se houver uma falha momentânea de rede.
       }
     }
 
@@ -725,7 +725,7 @@ export default function App() {
           <div className="brand-mark auth-brand" />
           <span className="eyebrow">Artist Release Hub Cloud</span>
           <h1>Carregando seus dados</h1>
-          <p>Conectando login, banco e calendÃ¡rio de lanÃ§amentos.</p>
+          <p>Conectando login, banco e calendário de lançamentos.</p>
         </section>
       </main>
     );

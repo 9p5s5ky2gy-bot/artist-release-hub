@@ -36,9 +36,9 @@ import {
 import { getReleaseType } from '../utils/release';
 
 const artistFields = [
-  { name: 'cityCountry', label: 'Cidade/paÃ­s' },
-  { name: 'primaryGenre', label: 'GÃªnero principal' },
-  { name: 'subgenres', label: 'SubgÃªneros' },
+  { name: 'cityCountry', label: 'Cidade/país' },
+  { name: 'primaryGenre', label: 'Gênero principal' },
+  { name: 'subgenres', label: 'Subgêneros' },
   { name: 'shortBio', label: 'Bio curta', textarea: true },
   { name: 'artistSpotify', label: 'Spotify' },
   { name: 'artistInstagram', label: 'Instagram' },
@@ -46,48 +46,48 @@ const artistFields = [
   { name: 'artistYoutube', label: 'YouTube' },
   { name: 'deezer', label: 'Deezer' },
   { name: 'appleMusic', label: 'Apple Music' },
-  { name: 'totalStreams', label: 'NÃºmero total de streams' },
+  { name: 'totalStreams', label: 'Número total de streams' },
   { name: 'monthlyListeners', label: 'Ouvintes mensais' },
   { name: 'spotifyFollowers', label: 'Seguidores no Spotify' },
   { name: 'instagramFollowers', label: 'Seguidores no Instagram' },
   { name: 'tiktokFollowers', label: 'Seguidores no TikTok' },
-  { name: 'collaborations', label: 'ColaboraÃ§Ãµes relevantes', textarea: true },
+  { name: 'collaborations', label: 'Colaborações relevantes', textarea: true },
   { name: 'previousPlaylists', label: 'Playlists anteriores', textarea: true },
   { name: 'achievements', label: 'Conquistas relevantes', textarea: true },
-  { name: 'archetypes', label: 'ArquÃ©tipos' },
+  { name: 'archetypes', label: 'Arquétipos' },
   { name: 'editorialLines', label: 'Linhas editoriais', textarea: true },
-  { name: 'targetAudience', label: 'PÃºblico-alvo', textarea: true },
+  { name: 'targetAudience', label: 'Público-alvo', textarea: true },
   { name: 'internalNotes', label: 'Notas internas', textarea: true },
 ];
 
 const releaseFields = [
-  { name: 'songLanguage', label: 'Idioma da mÃºsica', type: 'select', options: ['AutomÃ¡tico', 'PortuguÃªs', 'InglÃªs', 'Espanhol', 'Outro'] },
-  { name: 'releaseGenre', label: 'GÃªnero' },
-  { name: 'releaseSubgenre', label: 'SubgÃªnero' },
+  { name: 'songLanguage', label: 'Idioma da música', type: 'select', options: ['Automático', 'Português', 'Inglês', 'Espanhol', 'Outro'] },
+  { name: 'releaseGenre', label: 'Gênero' },
+  { name: 'releaseSubgenre', label: 'Subgênero' },
   { name: 'mood', label: 'Mood' },
   { name: 'energy', label: 'Energia' },
   { name: 'lyricTheme', label: 'Tema da letra' },
   { name: 'narrative', label: 'Narrativa', textarea: true },
-  { name: 'description', label: 'DescriÃ§Ã£o da mÃºsica', textarea: true },
-  { name: 'inspiration', label: 'InspiraÃ§Ã£o', textarea: true },
+  { name: 'description', label: 'Descrição da música', textarea: true },
+  { name: 'inspiration', label: 'Inspiração', textarea: true },
   { name: 'feat', label: 'Feat' },
   { name: 'producer', label: 'Produtor' },
   { name: 'composer', label: 'Compositor' },
-  { name: 'hasClip', label: 'Clipe', type: 'select', options: ['', 'sim', 'nÃ£o'] },
+  { name: 'hasClip', label: 'Clipe', type: 'select', options: ['', 'sim', 'não'] },
   { name: 'clipDate', label: 'Data do clipe', type: 'date' },
-  { name: 'presaveActive', label: 'PrÃ©-save ativo', type: 'select', options: ['', 'sim', 'nÃ£o'] },
-  { name: 'presaveLink', label: 'Link do prÃ©-save' },
-  { name: 'musicLink', label: 'Link da mÃºsica' },
+  { name: 'presaveActive', label: 'Pré-save ativo', type: 'select', options: ['', 'sim', 'não'] },
+  { name: 'presaveLink', label: 'Link do pré-save' },
+  { name: 'musicLink', label: 'Link da música' },
   { name: 'youtubeLink', label: 'Link do YouTube' },
-  { name: 'promotionPlan', label: 'Plano de divulgaÃ§Ã£o', textarea: true },
-  { name: 'paidTraffic', label: 'TrÃ¡fego pago', type: 'select', options: ['', 'sim', 'nÃ£o'] },
-  { name: 'trafficBudget', label: 'OrÃ§amento de trÃ¡fego' },
-  { name: 'fanActions', label: 'AÃ§Ãµes de fÃ£s', textarea: true },
+  { name: 'promotionPlan', label: 'Plano de divulgação', textarea: true },
+  { name: 'paidTraffic', label: 'Tráfego pago', type: 'select', options: ['', 'sim', 'não'] },
+  { name: 'trafficBudget', label: 'Orçamento de tráfego' },
+  { name: 'fanActions', label: 'Ações de fãs', textarea: true },
   { name: 'socialCampaign', label: 'Campanha nas redes sociais', textarea: true },
   { name: 'influencers', label: 'Influenciadores' },
-  { name: 'blogs', label: 'Blogs/pÃ¡ginas' },
+  { name: 'blogs', label: 'Blogs/páginas' },
   { name: 'desiredPlaylists', label: 'Playlists desejadas', textarea: true },
-  { name: 'notes', label: 'ObservaÃ§Ãµes', textarea: true },
+  { name: 'notes', label: 'Observações', textarea: true },
 ];
 
 function renderField(field, value, onChange) {
@@ -96,7 +96,7 @@ function renderField(field, value, onChange) {
       <select value={value || ''} onChange={(event) => onChange(field.name, event.target.value)}>
         {field.options.map((option) => (
           <option key={option || 'empty'} value={option}>
-            {option || 'NÃ£o informado'}
+            {option || 'Não informado'}
           </option>
         ))}
       </select>
@@ -142,7 +142,7 @@ function PitchCard({ draft, score, copied, saved, onCopy, onChange, onSave, onRe
     <article className="pitch-card">
       <div className="pitch-card-head">
         <div>
-          <span className="eyebrow">{draft.language === 'en' ? 'InglÃªs' : 'PortuguÃªs'}</span>
+          <span className="eyebrow">{draft.language === 'en' ? 'Inglês' : 'Português'}</span>
           <h3>{draft.title}</h3>
         </div>
         <StatusBadge tone={count <= draft.characterLimit ? 'mint' : 'red'}>
@@ -170,7 +170,7 @@ function PitchCard({ draft, score, copied, saved, onCopy, onChange, onSave, onRe
         </button>
         <button className="secondary-button compact" onClick={() => setEditing((value) => !value)} type="button">
           <Edit3 size={14} />
-          <span>{editing ? 'Concluir ediÃ§Ã£o' : 'Editar'}</span>
+          <span>{editing ? 'Concluir edição' : 'Editar'}</span>
         </button>
         <button className="secondary-button compact" onClick={() => onRegenerate(draft)} type="button">
           <RefreshCcw size={14} />
@@ -179,7 +179,7 @@ function PitchCard({ draft, score, copied, saved, onCopy, onChange, onSave, onRe
         {onSave && (
           <button className="primary-button compact" onClick={() => onSave(draft)} type="button">
             <Save size={14} />
-            <span>Salvar versÃ£o</span>
+            <span>Salvar versão</span>
           </button>
         )}
         {saved && (
@@ -368,7 +368,7 @@ export function PitchingPage({
     return (
       <section className="page-content">
         <PageHeader eyebrow="Pitching" title="Assistente de pitching" />
-        <EmptyState title="Cadastre um lanÃ§amento primeiro" text="Depois vocÃª poderÃ¡ gerar pitches para Spotify, curadores, blogs e distribuidora." />
+        <EmptyState title="Cadastre um lançamento primeiro" text="Depois você poderá gerar pitches para Spotify, curadores, blogs e distribuidora." />
       </section>
     );
   }
@@ -398,7 +398,7 @@ export function PitchingPage({
           </select>
         </label>
         <label>
-          LanÃ§amento
+          Lançamento
           <select value={selectedReleaseId} onChange={(event) => setSelectedReleaseId(event.target.value)}>
             {artistReleases.map((release) => (
               <option key={release.id} value={release.id}>
@@ -410,7 +410,7 @@ export function PitchingPage({
       </section>
 
       <div className="stats-grid">
-        <StatCard label="VersÃµes salvas" value={savedVersions.length} icon={FileText} tone="mint" />
+        <StatCard label="Versões salvas" value={savedVersions.length} icon={FileText} tone="mint" />
         <StatCard label="Checklist" value={`${checklistDone}/${pitchChecklistItems.length}`} icon={ClipboardList} tone="blue" />
         <StatCard label="Score atual" value={`${primaryScore.score}/100`} icon={Target} tone="yellow" />
         <StatCard label="Playlists sugeridas" value={playlists.length} icon={Sparkles} tone="coral" />
@@ -420,17 +420,17 @@ export function PitchingPage({
         <article className="panel pitch-release-summary">
           <div className="panel-heading">
             <div>
-              <span className="eyebrow">Resumo do lanÃ§amento</span>
-              <h2>{context.artistName} Â· {context.songTitle}</h2>
+              <span className="eyebrow">Resumo do lançamento</span>
+              <h2>{context.artistName} · {context.songTitle}</h2>
             </div>
             <StatusBadge>{getReleaseType(selectedRelease)}</StatusBadge>
           </div>
-          <p>{context.description || context.narrative || 'Adicione descriÃ§Ã£o, mood e plano de divulgaÃ§Ã£o para fortalecer o pitch.'}</p>
+          <p>{context.description || context.narrative || 'Adicione descrição, mood e plano de divulgação para fortalecer o pitch.'}</p>
           <div className="pitch-mini-list">
-            <span>LanÃ§amento: <strong>{formatHumanDate(selectedRelease?.releaseDate)}</strong></span>
-            <span>GÃªnero: <strong>{context.releaseGenre || 'nÃ£o informado'}</strong></span>
-            <span>Mood: <strong>{context.mood || 'nÃ£o informado'}</strong></span>
-            <span>PrÃ©-save: <strong>{context.hasPresave ? 'sim' : 'nÃ£o informado'}</strong></span>
+            <span>Lançamento: <strong>{formatHumanDate(selectedRelease?.releaseDate)}</strong></span>
+            <span>Gênero: <strong>{context.releaseGenre || 'não informado'}</strong></span>
+            <span>Mood: <strong>{context.mood || 'não informado'}</strong></span>
+            <span>Pré-save: <strong>{context.hasPresave ? 'sim' : 'não informado'}</strong></span>
           </div>
         </article>
 
@@ -440,7 +440,7 @@ export function PitchingPage({
               <span className="eyebrow">Alerta de data</span>
               <h2>Momento de envio</h2>
             </div>
-            <StatusBadge tone="blue">orientaÃ§Ã£o</StatusBadge>
+            <StatusBadge tone="blue">orientação</StatusBadge>
           </div>
           <p>{getPitchDateAlert(selectedRelease?.releaseDate)}</p>
           <ScoreBox score={primaryScore} />
@@ -451,7 +451,7 @@ export function PitchingPage({
         <div className="panel-heading">
           <div>
             <span className="eyebrow">Briefing</span>
-            <h2>Preencher ou revisar informaÃ§Ãµes</h2>
+            <h2>Preencher ou revisar informações</h2>
           </div>
           <StatusBadge tone="neutral">salvo no JSON</StatusBadge>
         </div>
@@ -469,7 +469,7 @@ export function PitchingPage({
             </div>
           </div>
           <div>
-            <h3>LanÃ§amento</h3>
+            <h3>Lançamento</h3>
             <div className="pitch-form-grid">
               {releaseFields.map((field) => (
                 <label className={field.textarea ? 'span-2' : ''} key={field.name}>
@@ -486,7 +486,7 @@ export function PitchingPage({
         <div className="panel-heading">
           <div>
             <span className="eyebrow">Gerador interno</span>
-            <h2>Gerar pitch automÃ¡tico</h2>
+            <h2>Gerar pitch automático</h2>
           </div>
           <StatusBadge tone="mint">sem API externa</StatusBadge>
         </div>
@@ -514,11 +514,11 @@ export function PitchingPage({
           </button>
           <button className="secondary-button" onClick={() => generateAll('en')} type="button">
             <Languages size={16} />
-            <span>Gerar em inglÃªs</span>
+            <span>Gerar em inglês</span>
           </button>
           <button className="secondary-button" onClick={() => generateAll('pt')} type="button">
             <Languages size={16} />
-            <span>Gerar em portuguÃªs</span>
+            <span>Gerar em português</span>
           </button>
           <button className="primary-button" onClick={() => generateAll()} type="button">
             <Sparkles size={16} />
@@ -531,17 +531,17 @@ export function PitchingPage({
         <article className="panel pitch-playlists-panel">
           <div className="panel-heading">
             <div>
-              <span className="eyebrow">Playlists compatÃ­veis</span>
-              <h2>ReferÃªncias de compatibilidade</h2>
+              <span className="eyebrow">Playlists compatíveis</span>
+              <h2>Referências de compatibilidade</h2>
             </div>
           </div>
-          <p className="muted-copy">Essas playlists sÃ£o referÃªncias de compatibilidade. Analise mood, arranjo, idioma e energia antes de fazer pitch.</p>
+          <p className="muted-copy">Essas playlists são referências de compatibilidade. Analise mood, arranjo, idioma e energia antes de fazer pitch.</p>
           <div className="playlist-suggestion-list">
             {playlists.map((playlist) => (
               <div className="playlist-suggestion-card" key={playlist.name}>
                 <div>
                   <strong>{playlist.name}</strong>
-                  <StatusBadge tone={playlist.compatibility === 'alta' ? 'mint' : playlist.compatibility === 'mÃ©dia' ? 'yellow' : 'blue'}>
+                  <StatusBadge tone={playlist.compatibility === 'alta' ? 'mint' : playlist.compatibility === 'média' ? 'yellow' : 'blue'}>
                     {playlist.compatibility}
                   </StatusBadge>
                 </div>
@@ -557,7 +557,7 @@ export function PitchingPage({
           <div className="panel-heading">
             <div>
               <span className="eyebrow">Checklist de pitch</span>
-              <h2>PreparaÃ§Ã£o</h2>
+              <h2>Preparação</h2>
             </div>
             <StatusBadge tone="blue">{checklistDone}/{pitchChecklistItems.length}</StatusBadge>
           </div>
@@ -580,7 +580,7 @@ export function PitchingPage({
         <div className="section-title-row">
           <div>
             <span className="eyebrow">Pitches gerados</span>
-            <h2>Rascunhos editÃ¡veis</h2>
+            <h2>Rascunhos editáveis</h2>
           </div>
           <StatusBadge tone="neutral">{drafts.length} card(s)</StatusBadge>
         </div>
@@ -598,14 +598,14 @@ export function PitchingPage({
             />
           ))}
         </div>
-        {!drafts.length && <EmptyState title="Nenhum pitch gerado ainda" text="Use os botÃµes acima para gerar o primeiro rascunho." />}
+        {!drafts.length && <EmptyState title="Nenhum pitch gerado ainda" text="Use os botões acima para gerar o primeiro rascunho." />}
       </section>
 
       <section className="pitch-results-section">
         <div className="section-title-row">
           <div>
-            <span className="eyebrow">VersÃµes salvas</span>
-            <h2>HistÃ³rico deste lanÃ§amento</h2>
+            <span className="eyebrow">Versões salvas</span>
+            <h2>Histórico deste lançamento</h2>
           </div>
           <StatusBadge tone="mint">{savedVersions.length} salva(s)</StatusBadge>
         </div>
