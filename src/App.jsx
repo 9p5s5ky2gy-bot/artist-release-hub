@@ -268,12 +268,16 @@ export default function App() {
   }
 
   function saveRelease(release) {
+    const songTitle = String(release?.songTitle || '').trim();
+    if (!release?.artistId || !songTitle || !release?.releaseDate) {
+      throw new Error('Preencha artista, nome da música e data de lançamento.');
+    }
     const shouldGenerateRandomPlan = Boolean(release.shouldGenerateRandomPlan);
     const existingRelease = releases.find((item) => item.id === release.id);
     const existingTasksForRelease = tasks.filter((task) => task.releaseId === release.id);
     const normalized = normalizeRelease({
       ...release,
-      songTitle: release.songTitle.trim(),
+      songTitle,
       id: release.id || createId('release'),
       createdAt: release.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),

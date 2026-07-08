@@ -793,6 +793,16 @@ textarea:focus {
   margin-top: 16px;
 }
 
+.form-error {
+  margin: 16px 0 0;
+  border: 1px solid rgba(255, 92, 126, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 92, 126, 0.1);
+  color: #ffd3dc;
+  padding: 11px 12px;
+  font-weight: 750;
+}
+
 .release-form-layout {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);

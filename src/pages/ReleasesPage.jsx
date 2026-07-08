@@ -1,5 +1,5 @@
-﻿import { CalendarDays, Edit3, Eraser, Plus, RefreshCcw, Sparkles, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { CalendarDays, Edit3, Eraser, Plus, RefreshCcw, Sparkles, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { CoverImage } from '../components/CoverImage';
 import { EmptyState } from '../components/EmptyState';
 import { ExternalLinkButton } from '../components/ExternalLinkButton';
@@ -23,6 +23,19 @@ export function ReleasesPage({
 }) {
   const [editingRelease, setEditingRelease] = useState(null);
   const [showForm, setShowForm] = useState(!releases.length);
+  const [formVersion, setFormVersion] = useState(0);
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    if (!showForm || !formRef.current) return;
+    formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [showForm, editingRelease?.id, formVersion]);
+
+  function openNewRelease() {
+    setEditingRelease(null);
+    setFormVersion((version) => version + 1);
+    setShowForm(true);
+  }
 
   function handleSave(release) {
     onSave(release);
@@ -39,7 +52,7 @@ export function ReleasesPage({
   return (
     <section className="page-content">
       <PageHeader eyebrow="Campanhas" title="Lançamentos">
-        <button className="primary-button" onClick={() => setShowForm(true)} type="button">
+        <button className="primary-button" onClick={openNewRelease} type="button">
           <Plus size={16} />
           <span>Novo lançamento</span>
         </button>
@@ -54,15 +67,18 @@ export function ReleasesPage({
       )}
 
       {showForm && artists.length > 0 && (
-        <ReleaseForm
-          artists={artists}
-          editingRelease={editingRelease}
-          onSave={handleSave}
-          onCancel={() => {
-            setEditingRelease(null);
-            setShowForm(false);
-          }}
-        />
+        <div ref={formRef}>
+          <ReleaseForm
+            key={editingRelease?.id || 'new-release-' + formVersion}
+            artists={artists}
+            editingRelease={editingRelease}
+            onSave={handleSave}
+            onCancel={() => {
+              setEditingRelease(null);
+              setShowForm(false);
+            }}
+          />
+        </div>
       )}
 
       <div className="release-grid">
@@ -162,7 +178,7 @@ export function ReleasesPage({
       {!releases.length && !showForm && artists.length > 0 && (
         <EmptyState
           title="Nenhum lançamento cadastrado"
-          action={<button className="secondary-button" onClick={() => setShowForm(true)} type="button">Cadastrar lançamento</button>}
+          action={<button className="secondary-button" onClick={openNewRelease} type="button">Cadastrar lançamento</button>}
         />
       )}
     </section>

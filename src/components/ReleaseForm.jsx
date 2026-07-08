@@ -1,4 +1,4 @@
-﻿import { CalendarCheck, Save, Sparkles, X } from 'lucide-react';
+import { CalendarCheck, Save, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { releaseStatuses } from '../data/calendarTemplate';
 import { addDays, formatDateInput, getLastFridayOfMonth } from '../utils/date';
@@ -62,11 +62,13 @@ function normalizeFormRelease(release) {
 export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
   const [form, setForm] = useState(emptyRelease);
   const [customLinksText, setCustomLinksText] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     const next = normalizeFormRelease(editingRelease);
     setForm(next);
     setCustomLinksText(serializeLinks(next.customLinks));
+    setSubmitError('');
   }, [editingRelease]);
 
   const selectedArtist = useMemo(
@@ -75,6 +77,7 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
   );
 
   function updateField(event) {
+    setSubmitError('');
     const { checked, name, type, value } = event.target;
     setForm((current) => {
       const fieldValue = type === 'checkbox' ? checked : value;
@@ -87,6 +90,7 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
   }
 
   function updateCover(patch) {
+    setSubmitError('');
     setForm((current) => ({ ...current, ...patch }));
   }
 
@@ -103,13 +107,35 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
 
   function handleSubmit(event) {
     event.preventDefault();
-    if (!form.artistId || !form.songTitle.trim() || !form.releaseDate) return;
-    onSave({
-      ...form,
-      customLinks: parseLinks(customLinksText),
-    });
-    setForm(emptyRelease);
-    setCustomLinksText('');
+    const songTitle = form.songTitle.trim();
+
+    if (!form.artistId) {
+      setSubmitError('Selecione um artista para cadastrar o lançamento.');
+      return;
+    }
+
+    if (!songTitle) {
+      setSubmitError('Digite o nome da música antes de cadastrar.');
+      return;
+    }
+
+    if (!form.releaseDate) {
+      setSubmitError('Escolha a data de lançamento antes de cadastrar.');
+      return;
+    }
+
+    try {
+      onSave({
+        ...form,
+        songTitle,
+        customLinks: parseLinks(customLinksText),
+      });
+      setForm(emptyRelease);
+      setCustomLinksText('');
+      setSubmitError('');
+    } catch (error) {
+      setSubmitError(error?.message || 'Não foi possível cadastrar o lançamento. Revise os campos e tente novamente.');
+    }
   }
 
   return (
@@ -243,6 +269,8 @@ export function ReleaseForm({ artists, editingRelease, onSave, onCancel }) {
           </label>
         </div>
       </div>
+
+      {submitError && <p className="form-error" role="alert">{submitError}</p>}
 
       <div className="form-actions">
         <button className="primary-button" type="submit" disabled={!artists.length}>
