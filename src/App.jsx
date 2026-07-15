@@ -18,6 +18,7 @@ import { TasksPage } from './pages/TasksPage';
 import { LinksPage } from './pages/LinksPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { Undo2 } from 'lucide-react';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { hasWorkspaceData, loadWorkspace, normalizeWorkspace, saveWorkspace } from './lib/workspaceStore';
 import { buildPlanDays, generateTasksForRelease, getDayKey } from './utils/calendar';
@@ -65,6 +66,14 @@ function removeCompletionKeys(current, releaseIds) {
   );
 }
 
+function selectCompletionKeys(current, releaseIds) {
+  const releaseSet = new Set(releaseIds);
+  return Object.fromEntries(
+    Object.entries(current || {}).filter(([key]) => releaseSet.has(key.split(':')[0])),
+  );
+}
+
+
 
 function removePitchKeys(current, releaseIds = [], artistId = '') {
   const releaseSet = new Set(releaseIds);
@@ -75,6 +84,23 @@ function removePitchKeys(current, releaseIds = [], artistId = '') {
     }),
   );
 }
+
+function selectPitchKeys(current, releaseIds = [], artistId = '') {
+  const releaseSet = new Set(releaseIds);
+  return Object.fromEntries(
+    Object.entries(current || {}).filter(([key]) => {
+      const [keyArtistId, keyReleaseId] = key.split(':');
+      return keyArtistId === artistId || releaseSet.has(keyReleaseId);
+    }),
+  );
+}
+
+function restoreMissingItems(current, removed, prepend = false) {
+  const currentIds = new Set(current.map((item) => item?.id).filter(Boolean));
+  const missing = removed.filter((item) => !item?.id || !currentIds.has(item.id));
+  return prepend ? [...missing, ...current] : [...current, ...missing];
+}
+
 function isOrientationCompleted(orientation) {
   const status = String(orientation?.status || '')
     .toLowerCase()
@@ -139,6 +165,10 @@ export default function App() {
   const saveTimerRef = useRef(null);
   const hydratedUserRef = useRef('');
   const lastPayloadRef = useRef('');
+  const undoStackRef = useRef([]);
+  const undoNoticeTimerRef = useRef(null);
+  const [undoHistory, setUndoHistory] = useState([]);
+  const [undoNotice, setUndoNotice] = useState('');
 
   const sortedArtists = useMemo(
     () => [...artists].sort((a, b) => String(a.stageName || '').localeCompare(String(b.stageName || ''))),
@@ -154,6 +184,15 @@ export default function App() {
     () => normalizeWorkspace({ artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists, briefings, reports }),
     [artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists, briefings, reports],
   );
+
+  useEffect(() => {
+    undoStackRef.current = [];
+    setUndoHistory([]);
+    setUndoNotice('');
+  }, [auth.user?.id]);
+
+  useEffect(() => () => window.clearTimeout(undoNoticeTimerRef.current), []);
+
 
   useEffect(() => {
     if (!auth.configured) {
@@ -283,6 +322,32 @@ export default function App() {
     return () => window.clearTimeout(saveTimerRef.current);
   }, [auth.configured, auth.user?.id, cloudState.loading, cloudState.ready, workspaceSnapshot]);
 
+  function syncUndoHistory(stack) {
+    setUndoHistory(stack.map(({ id, label }) => ({ id, label })));
+  }
+
+  function registerDeletionUndo(label, restore) {
+    const nextStack = [...undoStackRef.current.slice(-9), { id: createId('undo'), label, restore }];
+    undoStackRef.current = nextStack;
+    syncUndoHistory(nextStack);
+    setUndoNotice(`${label} pode ser restaurado.`);
+    window.clearTimeout(undoNoticeTimerRef.current);
+    undoNoticeTimerRef.current = window.setTimeout(() => setUndoNotice(''), 3200);
+  }
+
+  function undoLastDeletion() {
+    const entry = undoStackRef.current.at(-1);
+    if (!entry) return;
+
+    const nextStack = undoStackRef.current.slice(0, -1);
+    undoStackRef.current = nextStack;
+    syncUndoHistory(nextStack);
+    entry.restore();
+    setUndoNotice(`${entry.label} restaurado.`);
+    window.clearTimeout(undoNoticeTimerRef.current);
+    undoNoticeTimerRef.current = window.setTimeout(() => setUndoNotice(''), 3200);
+  }
+
   function saveArtist(artist) {
     const normalized = {
       ...artist,
@@ -299,6 +364,30 @@ export default function App() {
 
   function deleteArtist(artistId) {
     const releaseIds = releases.filter((release) => release.artistId === artistId).map((release) => release.id);
+    const removedArtist = artists.find((artist) => artist.id === artistId);
+    if (!removedArtist) return;
+    const releaseSet = new Set(releaseIds);
+    const removedReleases = releases.filter((release) => release.artistId === artistId);
+    const removedTasks = tasks.filter((task) => task.artistId === artistId || releaseSet.has(task.releaseId));
+    const removedCompletions = selectCompletionKeys(dayCompletions, releaseIds);
+    const removedPitching = pitching.filter((item) => item.artistId === artistId || releaseSet.has(item.releaseId));
+    const removedPitchBriefs = selectPitchKeys(pitchBriefs, releaseIds, artistId);
+    const removedPitchChecklists = selectPitchKeys(pitchChecklists, releaseIds, artistId);
+    const removedBriefings = briefings.filter((item) => item.artistId === artistId || releaseSet.has(item.releaseId));
+    const removedReports = reports.filter((item) => item.artistId === artistId || releaseSet.has(item.releaseId));
+
+    registerDeletionUndo(`Artista "${removedArtist.stageName || 'sem nome'}"`, () => {
+      setArtists((current) => restoreMissingItems(current, [removedArtist]));
+      setReleases((current) => sortByDate(restoreMissingItems(current, removedReleases)));
+      setTasks((current) => sortByDate(restoreMissingItems(current, removedTasks)));
+      setDayCompletions((current) => ({ ...removedCompletions, ...current }));
+      setPitching((current) => restoreMissingItems(current, removedPitching, true));
+      setPitchBriefs((current) => ({ ...removedPitchBriefs, ...current }));
+      setPitchChecklists((current) => ({ ...removedPitchChecklists, ...current }));
+      setBriefings((current) => restoreMissingItems(current, removedBriefings, true));
+      setReports((current) => restoreMissingItems(current, removedReports, true));
+    });
+
     setArtists((current) => current.filter((artist) => artist.id !== artistId));
     setReleases((current) => current.filter((release) => release.artistId !== artistId));
     setTasks((current) => current.filter((task) => task.artistId !== artistId && !releaseIds.includes(task.releaseId)));
@@ -381,6 +470,27 @@ export default function App() {
     );
   }
   function deleteRelease(releaseId) {
+    const removedRelease = releases.find((release) => release.id === releaseId);
+    if (!removedRelease) return;
+    const removedTasks = tasks.filter((task) => task.releaseId === releaseId);
+    const removedCompletions = selectCompletionKeys(dayCompletions, [releaseId]);
+    const removedPitching = pitching.filter((item) => item.releaseId === releaseId);
+    const removedPitchBriefs = selectPitchKeys(pitchBriefs, [releaseId]);
+    const removedPitchChecklists = selectPitchKeys(pitchChecklists, [releaseId]);
+    const removedBriefings = briefings.filter((item) => item.releaseId === releaseId);
+    const removedReports = reports.filter((item) => item.releaseId === releaseId);
+
+    registerDeletionUndo(`Lançamento "${removedRelease.songTitle || 'sem título'}"`, () => {
+      setReleases((current) => sortByDate(restoreMissingItems(current, [removedRelease])));
+      setTasks((current) => sortByDate(restoreMissingItems(current, removedTasks)));
+      setDayCompletions((current) => ({ ...removedCompletions, ...current }));
+      setPitching((current) => restoreMissingItems(current, removedPitching, true));
+      setPitchBriefs((current) => ({ ...removedPitchBriefs, ...current }));
+      setPitchChecklists((current) => ({ ...removedPitchChecklists, ...current }));
+      setBriefings((current) => restoreMissingItems(current, removedBriefings, true));
+      setReports((current) => restoreMissingItems(current, removedReports, true));
+    });
+
     setReleases((current) => current.filter((release) => release.id !== releaseId));
     setTasks((current) => current.filter((task) => task.releaseId !== releaseId));
     setDayCompletions((current) => removeCompletionKeys(current, [releaseId]));
@@ -442,6 +552,11 @@ export default function App() {
   }
 
   function deleteOrientation(orientationId) {
+    const removedOrientation = tasks.find((task) => task.id === orientationId);
+    if (!removedOrientation) return;
+    registerDeletionUndo(`Ação "${removedOrientation.title || 'sem título'}"`, () => {
+      setTasks((current) => sortByDate(restoreMissingItems(current, [removedOrientation])));
+    });
     setTasks((current) => current.filter((task) => task.id !== orientationId));
   }
 
@@ -527,6 +642,15 @@ export default function App() {
     const release = releases.find((item) => item.id === releaseId);
     if (!release) return;
     if (!window.confirm('Limpar as sugestões IA deste lançamento?')) return;
+    const removedTasks = tasks.filter(
+      (task) => task.releaseId === releaseId && (task.templateId === 'random-plan' || task.generatedPlan),
+    );
+    const removedCompletions = selectCompletionKeys(dayCompletions, [releaseId]);
+    registerDeletionUndo(`Estratégia de "${release.songTitle || 'lançamento'}"`, () => {
+      setReleases((current) => current.map((item) => (item.id === releaseId ? release : item)));
+      setTasks((current) => sortByDate(restoreMissingItems(current, removedTasks)));
+      setDayCompletions((current) => ({ ...removedCompletions, ...current }));
+    });
 
     setReleases((current) =>
       current.map((item) =>
@@ -589,6 +713,18 @@ export default function App() {
   function clearData() {
     const target = auth.configured ? 'da sua conta em nuvem e deste navegador' : 'salvos neste navegador';
     if (!window.confirm(`Apagar artistas, lançamentos e orientações ${target}?`)) return;
+    const removedWorkspace = { artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists, briefings, reports };
+    registerDeletionUndo('Dados do painel', () => {
+      setArtists((current) => restoreMissingItems(current, removedWorkspace.artists));
+      setReleases((current) => sortByDate(restoreMissingItems(current, removedWorkspace.releases)));
+      setTasks((current) => sortByDate(restoreMissingItems(current, removedWorkspace.tasks)));
+      setDayCompletions((current) => ({ ...removedWorkspace.dayCompletions, ...current }));
+      setPitching((current) => restoreMissingItems(current, removedWorkspace.pitching, true));
+      setPitchBriefs((current) => ({ ...removedWorkspace.pitchBriefs, ...current }));
+      setPitchChecklists((current) => ({ ...removedWorkspace.pitchChecklists, ...current }));
+      setBriefings((current) => restoreMissingItems(current, removedWorkspace.briefings, true));
+      setReports((current) => restoreMissingItems(current, removedWorkspace.reports, true));
+    });
     setArtists([]);
     setReleases([]);
     setTasks([]);
@@ -631,6 +767,11 @@ export default function App() {
 
   function deletePitchVersion(versionId) {
     if (!window.confirm('Excluir esta versão de pitch?')) return;
+    const removedVersion = pitching.find((item) => item.id === versionId);
+    if (!removedVersion) return;
+    registerDeletionUndo(`Pitch "${removedVersion.title || removedVersion.type || 'salvo'}"`, () => {
+      setPitching((current) => restoreMissingItems(current, [removedVersion], true));
+    });
     setPitching((current) => current.filter((item) => item.id !== versionId));
   }
 
@@ -674,6 +815,11 @@ export default function App() {
 
   function deleteBriefingVersion(briefingId) {
     if (!window.confirm('Excluir este briefing?')) return;
+    const removedBriefing = briefings.find((item) => item.id === briefingId);
+    if (!removedBriefing) return;
+    registerDeletionUndo(`Briefing "${removedBriefing.title || 'salvo'}"`, () => {
+      setBriefings((current) => restoreMissingItems(current, [removedBriefing], true));
+    });
     setBriefings((current) => current.filter((item) => item.id !== briefingId));
   }
 
@@ -695,8 +841,49 @@ export default function App() {
 
   function deleteReportVersion(reportId) {
     if (!window.confirm('Excluir este relatorio?')) return;
+    const removedReport = reports.find((item) => item.id === reportId);
+    if (!removedReport) return;
+    registerDeletionUndo(`Relatório "${removedReport.title || 'salvo'}"`, () => {
+      setReports((current) => restoreMissingItems(current, [removedReport], true));
+    });
     setReports((current) => current.filter((item) => item.id !== reportId));
   }
+  function deleteFinanceItem(releaseId, collection, itemId) {
+    const release = releases.find((item) => item.id === releaseId);
+    const finance = release?.finance || {};
+    const currentItems = Array.isArray(finance[collection]) ? finance[collection] : [];
+    const removedItem = currentItems.find((item) => item.id === itemId);
+    if (!release || !removedItem) return;
+
+    const itemType = collection === 'expenses' ? 'Despesa' : 'Receita';
+    registerDeletionUndo(`${itemType} "${removedItem.description || 'sem descrição'}"`, () => {
+      setReleases((current) =>
+        current.map((item) => {
+          if (item.id !== releaseId) return item;
+          const currentFinance = item.finance || {};
+          const items = Array.isArray(currentFinance[collection]) ? currentFinance[collection] : [];
+          return {
+            ...item,
+            finance: {
+              ...currentFinance,
+              [collection]: restoreMissingItems(items, [removedItem], true),
+              updatedAt: new Date().toISOString(),
+            },
+            updatedAt: new Date().toISOString(),
+          };
+        }),
+      );
+    });
+
+    patchRelease(releaseId, {
+      finance: {
+        ...finance,
+        [collection]: currentItems.filter((item) => item.id !== itemId),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  }
+
   function exportCsv() {
     exportTasksCsv(planDays);
   }
@@ -789,6 +976,7 @@ export default function App() {
       <FinancePage
         {...commonProps}
         onPatchRelease={patchRelease}
+        onDeleteFinanceItem={deleteFinanceItem}
         onNavigate={setActivePage}
       />
     ),
@@ -883,6 +1071,20 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <div className="global-undo-control no-print">
+        <button
+          className="global-undo-button"
+          disabled={!undoHistory.length}
+          onClick={undoLastDeletion}
+          type="button"
+          aria-label={undoHistory.length ? `Desfazer exclusão: ${undoHistory.at(-1).label}` : 'Nenhuma exclusão para desfazer'}
+          title={undoHistory.length ? `Desfazer: ${undoHistory.at(-1).label}` : 'Nenhuma exclusão para desfazer'}
+        >
+          <Undo2 size={21} />
+          {undoHistory.length > 1 && <span className="global-undo-count">{undoHistory.length}</span>}
+        </button>
+        {undoNotice && <div className="global-undo-notice" role="status">{undoNotice}</div>}
+      </div>
       <Sidebar
         activePage={activePage}
         onChangePage={setActivePage}

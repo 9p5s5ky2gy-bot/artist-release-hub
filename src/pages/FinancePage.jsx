@@ -10,7 +10,7 @@ import { defaultExpenseCategories, defaultRevenueCategories, financeExpenseStatu
 const emptyExpense = { description: '', category: 'outros', plannedValue: '', realValue: '', date: '', supplier: '', status: 'planejado', paid: false, paymentMethod: '', note: '' };
 const emptyRevenue = { description: '', category: 'streams', value: '', date: '', confirmed: false, note: '' };
 
-export function FinancePage({ artists, releases, onPatchRelease, onNavigate }) {
+export function FinancePage({ artists, releases, onPatchRelease, onDeleteFinanceItem, onNavigate }) {
   const [artistId, setArtistId] = useState(artists[0]?.id || '');
   const artistReleases = useMemo(() => releases.filter((release) => !artistId || release.artistId === artistId), [releases, artistId]);
   const [releaseId, setReleaseId] = useState(artistReleases[0]?.id || releases[0]?.id || '');
@@ -46,8 +46,8 @@ export function FinancePage({ artists, releases, onPatchRelease, onNavigate }) {
     setRevenue(emptyRevenue);
   }
 
-  function removeExpense(id) { patchFinance({ expenses: finance.expenses.filter((item) => item.id !== id) }); }
-  function removeRevenue(id) { patchFinance({ revenues: finance.revenues.filter((item) => item.id !== id) }); }
+  function removeExpense(id) { onDeleteFinanceItem(release.id, 'expenses', id); }
+  function removeRevenue(id) { onDeleteFinanceItem(release.id, 'revenues', id); }
 
   if (!artists.length || !releases.length) return <section className="page-content"><PageHeader eyebrow="Financeiro" title="Gestao financeira" /><EmptyState title="Cadastre artista e lancamento" text="O financeiro e salvo dentro do JSON do lancamento." /></section>;
 

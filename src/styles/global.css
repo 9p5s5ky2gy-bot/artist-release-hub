@@ -80,6 +80,79 @@ img {
   min-height: 100vh;
 }
 
+.global-undo-control {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 14;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.global-undo-button {
+  position: relative;
+  display: inline-grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid rgba(101, 230, 173, 0.42);
+  border-radius: var(--radius);
+  background: rgba(21, 25, 34, 0.96);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+  color: var(--mint);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.global-undo-button:not(:disabled):hover {
+  border-color: var(--mint);
+  background: var(--surface-3);
+  transform: translateY(-1px);
+}
+
+.global-undo-button:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 3px;
+}
+
+.global-undo-button:disabled {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--muted-2);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.global-undo-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  padding: 0 5px;
+  border: 2px solid var(--bg);
+  border-radius: 999px;
+  background: var(--mint);
+  color: #07110c;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.global-undo-notice {
+  max-width: min(320px, calc(100vw - 36px));
+  padding: 9px 12px;
+  border: 1px solid rgba(101, 230, 173, 0.28);
+  border-radius: var(--radius);
+  background: rgba(21, 25, 34, 0.98);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
 .main-area {
   width: 100%;
   min-width: 0;
