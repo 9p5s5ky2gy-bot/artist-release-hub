@@ -10,10 +10,14 @@ export const emptyWorkspace = {
   pitching: [],
   pitchBriefs: {},
   pitchChecklists: {},
+  briefings: [],
+  reports: [],
 };
 
 export function normalizeWorkspace(data) {
+  const safeData = data && typeof data === 'object' ? data : {};
   return {
+    ...safeData,
     artists: Array.isArray(data?.artists) ? data.artists : [],
     releases: Array.isArray(data?.releases) ? data.releases : [],
     tasks: Array.isArray(data?.tasks) ? data.tasks : [],
@@ -21,6 +25,8 @@ export function normalizeWorkspace(data) {
     pitching: Array.isArray(data?.pitching) ? data.pitching : [],
     pitchBriefs: data?.pitchBriefs && typeof data.pitchBriefs === 'object' ? data.pitchBriefs : {},
     pitchChecklists: data?.pitchChecklists && typeof data.pitchChecklists === 'object' ? data.pitchChecklists : {},
+    briefings: Array.isArray(data?.briefings) ? data.briefings : [],
+    reports: Array.isArray(data?.reports) ? data.reports : [],
   };
 }
 
@@ -33,7 +39,9 @@ export function hasWorkspaceData(data) {
     Object.keys(workspace.dayCompletions).length > 0 ||
     workspace.pitching.length > 0 ||
     Object.keys(workspace.pitchBriefs).length > 0 ||
-    Object.keys(workspace.pitchChecklists).length > 0
+    Object.keys(workspace.pitchChecklists).length > 0 ||
+    workspace.briefings.length > 0 ||
+    workspace.reports.length > 0
   );
 }
 

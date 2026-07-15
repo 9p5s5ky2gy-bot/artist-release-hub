@@ -6,6 +6,12 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ArtistsPage } from './pages/ArtistsPage';
 import { ReleasesPage } from './pages/ReleasesPage';
 import { ArtistViewPage } from './pages/ArtistViewPage';
+import { DiagnosisPage } from './pages/DiagnosisPage';
+import { GeneralCalendarPage } from './pages/GeneralCalendarPage';
+import { BriefingsPage } from './pages/BriefingsPage';
+import { FinancePage } from './pages/FinancePage';
+import { ComparePage } from './pages/ComparePage';
+import { ReportsPage } from './pages/ReportsPage';
 import { PitchingPage } from './pages/PitchingPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { TasksPage } from './pages/TasksPage';
@@ -30,6 +36,8 @@ const STORAGE = {
   pitching: 'artist-release-hub:pitching',
   pitchBriefs: 'artist-release-hub:pitch-briefs',
   pitchChecklists: 'artist-release-hub:pitch-checklists',
+  briefings: 'artist-release-hub:briefings',
+  reports: 'artist-release-hub:reports',
 };
 
 function sortByDate(items) {
@@ -117,6 +125,8 @@ export default function App() {
   const [pitching, setPitching] = useLocalStorage(STORAGE.pitching, []);
   const [pitchBriefs, setPitchBriefs] = useLocalStorage(STORAGE.pitchBriefs, {});
   const [pitchChecklists, setPitchChecklists] = useLocalStorage(STORAGE.pitchChecklists, {});
+  const [briefings, setBriefings] = useLocalStorage(STORAGE.briefings, []);
+  const [reports, setReports] = useLocalStorage(STORAGE.reports, []);
   const auth = useSupabaseAuth();
   const [workspaceReloadKey, setWorkspaceReloadKey] = useState(0);
   const [cloudState, setCloudState] = useState({
@@ -141,8 +151,8 @@ export default function App() {
     [sortedTasks, sortedReleases, sortedArtists, dayCompletions],
   );
   const workspaceSnapshot = useMemo(
-    () => normalizeWorkspace({ artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists }),
-    [artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists],
+    () => normalizeWorkspace({ artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists, briefings, reports }),
+    [artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists, briefings, reports],
   );
 
   useEffect(() => {
@@ -162,6 +172,8 @@ export default function App() {
         setPitching([]);
         setPitchBriefs({});
         setPitchChecklists({});
+        setBriefings([]);
+        setReports([]);
       }
 
       hydratedUserRef.current = '';
@@ -172,7 +184,7 @@ export default function App() {
     }
 
     let cancelled = false;
-    const localSnapshot = normalizeWorkspace({ artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists });
+    const localSnapshot = normalizeWorkspace({ artists, releases, tasks, dayCompletions, pitching, pitchBriefs, pitchChecklists, briefings, reports });
 
     setCloudState((current) => ({ ...current, loading: true, ready: false, error: '' }));
 
@@ -190,6 +202,8 @@ export default function App() {
         setPitching(nextWorkspace.pitching);
         setPitchBriefs(nextWorkspace.pitchBriefs);
         setPitchChecklists(nextWorkspace.pitchChecklists);
+        setBriefings(nextWorkspace.briefings);
+        setReports(nextWorkspace.reports);
 
         hydratedUserRef.current = auth.user.id;
         lastPayloadRef.current = JSON.stringify(nextWorkspace);
@@ -292,6 +306,8 @@ export default function App() {
     setPitching((current) => current.filter((item) => item.artistId !== artistId && !releaseIds.includes(item.releaseId)));
     setPitchBriefs((current) => removePitchKeys(current, releaseIds, artistId));
     setPitchChecklists((current) => removePitchKeys(current, releaseIds, artistId));
+    setBriefings((current) => current.filter((item) => item.artistId !== artistId && !releaseIds.includes(item.releaseId)));
+    setReports((current) => current.filter((item) => item.artistId !== artistId && !releaseIds.includes(item.releaseId)));
   }
 
   function saveRelease(release) {
@@ -355,6 +371,15 @@ export default function App() {
       setDayCompletions((current) => removeCompletionKeys(current, [releaseToSave.id]));
     }
   }
+  function patchRelease(releaseId, patch) {
+    setReleases((current) =>
+      current.map((release) =>
+        release.id === releaseId
+          ? { ...release, ...patch, updatedAt: new Date().toISOString() }
+          : release,
+      ),
+    );
+  }
   function deleteRelease(releaseId) {
     setReleases((current) => current.filter((release) => release.id !== releaseId));
     setTasks((current) => current.filter((task) => task.releaseId !== releaseId));
@@ -362,6 +387,8 @@ export default function App() {
     setPitching((current) => current.filter((item) => item.releaseId !== releaseId));
     setPitchBriefs((current) => removePitchKeys(current, [releaseId]));
     setPitchChecklists((current) => removePitchKeys(current, [releaseId]));
+    setBriefings((current) => current.filter((item) => item.releaseId !== releaseId));
+    setReports((current) => current.filter((item) => item.releaseId !== releaseId));
   }
 
   function setDayCompleted(releaseId, date, completed) {
@@ -554,6 +581,8 @@ export default function App() {
     setPitching([]);
     setPitchBriefs({});
     setPitchChecklists({});
+    setBriefings([]);
+    setReports([]);
     setActivePage('dashboard');
   }
 
@@ -567,6 +596,8 @@ export default function App() {
     setPitching([]);
     setPitchBriefs({});
     setPitchChecklists({});
+    setBriefings([]);
+    setReports([]);
     setActivePage('dashboard');
   }
 
@@ -624,6 +655,48 @@ export default function App() {
       },
     }));
   }
+
+  function saveBriefingVersion(briefing) {
+    const normalized = {
+      ...briefing,
+      id: briefing.id || createId('briefing'),
+      createdAt: briefing.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setBriefings((current) => [normalized, ...current]);
+  }
+
+  function updateBriefingVersion(briefingId, patch) {
+    setBriefings((current) =>
+      current.map((item) => (item.id === briefingId ? { ...item, ...patch, id: briefingId, updatedAt: new Date().toISOString() } : item)),
+    );
+  }
+
+  function deleteBriefingVersion(briefingId) {
+    if (!window.confirm('Excluir este briefing?')) return;
+    setBriefings((current) => current.filter((item) => item.id !== briefingId));
+  }
+
+  function saveReportVersion(report) {
+    const normalized = {
+      ...report,
+      id: report.id || createId('report'),
+      createdAt: report.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setReports((current) => [normalized, ...current]);
+  }
+
+  function updateReportVersion(reportId, patch) {
+    setReports((current) =>
+      current.map((item) => (item.id === reportId ? { ...item, ...patch, id: reportId, updatedAt: new Date().toISOString() } : item)),
+    );
+  }
+
+  function deleteReportVersion(reportId) {
+    if (!window.confirm('Excluir este relatorio?')) return;
+    setReports((current) => current.filter((item) => item.id !== reportId));
+  }
   function exportCsv() {
     exportTasksCsv(planDays);
   }
@@ -650,6 +723,8 @@ export default function App() {
     pitching,
     pitchBriefs,
     pitchChecklists,
+    briefings,
+    reports,
   };
 
   const dayActions = {
@@ -686,6 +761,49 @@ export default function App() {
         onSetDayCompleted={setDayCompleted}
         onSetPitchChecklist={setPitchChecklistItem}
         onNavigate={setActivePage}
+      />
+    ),
+    diagnosis: (
+      <DiagnosisPage
+        {...commonProps}
+        onPatchRelease={patchRelease}
+        onNavigate={setActivePage}
+      />
+    ),
+    generalCalendar: (
+      <GeneralCalendarPage
+        {...commonProps}
+        {...dayActions}
+        onNavigate={setActivePage}
+      />
+    ),
+    briefings: (
+      <BriefingsPage
+        {...commonProps}
+        onSaveBriefing={saveBriefingVersion}
+        onUpdateBriefing={updateBriefingVersion}
+        onDeleteBriefing={deleteBriefingVersion}
+      />
+    ),
+    finance: (
+      <FinancePage
+        {...commonProps}
+        onPatchRelease={patchRelease}
+        onNavigate={setActivePage}
+      />
+    ),
+    compare: (
+      <ComparePage
+        {...commonProps}
+        onNavigate={setActivePage}
+      />
+    ),
+    reports: (
+      <ReportsPage
+        {...commonProps}
+        onSaveReport={saveReportVersion}
+        onUpdateReport={updateReportVersion}
+        onDeleteReport={deleteReportVersion}
       />
     ),
     pitching: (

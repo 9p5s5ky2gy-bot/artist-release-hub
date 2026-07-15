@@ -21,7 +21,9 @@ const navigationGroups = [
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'calendar', label: 'Calendário', icon: CalendarDays },
+      { id: 'generalCalendar', label: 'Calendario Geral', icon: CalendarDays },
       { id: 'tasks', label: 'Dias', icon: CheckSquare },
+      { id: 'diagnosis', label: 'Diagnostico', icon: Sparkles },
     ],
   },
   {
@@ -31,6 +33,10 @@ const navigationGroups = [
       { id: 'releases', label: 'Lançamentos', icon: Disc3 },
       { id: 'artistView', label: 'Visão do Artista', icon: Eye },
       { id: 'pitching', label: 'Pitching', icon: Send },
+      { id: 'briefings', label: 'Briefings', icon: CheckSquare },
+      { id: 'finance', label: 'Financeiro', icon: BadgeCheck },
+      { id: 'compare', label: 'Comparar', icon: LayoutDashboard },
+      { id: 'reports', label: 'Relatorios', icon: Link2 },
       { id: 'links', label: 'Links', icon: Link2 },
     ],
   },

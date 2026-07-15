@@ -238,6 +238,10 @@ export function ArtistViewPage({
           <Music2 size={16} />
           <span>Editar artista</span>
         </button>
+        <button className="secondary-button" type="button" onClick={() => onNavigate('reports')}>
+          <Clipboard size={16} />
+          <span>Gerar relatorio</span>
+        </button>
       </PageHeader>
 
       <section className="artist-view-selector panel">

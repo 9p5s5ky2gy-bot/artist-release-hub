@@ -150,6 +150,12 @@ export function ReleasesPage({
                     <Edit3 size={15} />
                     <span>Editar</span>
                   </button>
+                  {onNavigate && (
+                    <button className="secondary-button" onClick={() => onNavigate('reports')} type="button">
+                      <CalendarDays size={15} />
+                      <span>Gerar relatorio</span>
+                    </button>
+                  )}
                   <button className="secondary-button" onClick={() => onGenerateRandomPlan(release.id)} type="button">
                     <Sparkles size={15} />
                     <span>{hasRandomPlan ? 'Regenerar IA' : 'Gerar sugestões IA'}</span>
