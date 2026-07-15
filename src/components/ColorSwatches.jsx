@@ -1,15 +1,20 @@
-export function ColorSwatches({ colors }) {
-  const parsed = String(colors || '')
-    .split(',')
-    .map((color) => color.trim())
-    .filter(Boolean);
+import { parseIdentityColors } from '../utils/colors';
 
-  if (!parsed.length) return <span className="muted">Sem cores</span>;
+export function ColorSwatches({ colors }) {
+  const parsed = parseIdentityColors(colors);
+
+  if (!parsed.length) return <span className="muted">Cores não definidas</span>;
 
   return (
     <div className="swatches" aria-label="Cores da identidade visual">
-      {parsed.map((color) => (
-        <span key={color} title={color} style={{ background: color }} />
+      {parsed.map(({ color, label }) => (
+        <span
+          aria-label={label}
+          key={`${color}-${label}`}
+          role="img"
+          title={label}
+          style={{ backgroundColor: color }}
+        />
       ))}
     </div>
   );
