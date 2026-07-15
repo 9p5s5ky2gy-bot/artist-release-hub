@@ -1,4 +1,4 @@
-import { getReleaseCover, getReleaseType } from './release';
+import { getReleaseCover, getReleaseType } from './release.js';
 
 export const pitchTypes = [
   { id: 'spotify', label: 'Spotify for Artists', max: 500 },
@@ -100,18 +100,94 @@ function yes(value) {
 }
 
 function sentenceJoin(items, fallback = '') {
-  const clean = items.map(text).filter(Boolean);
+  const seen = new Set();
+  const clean = items
+    .map((item) => text(item).replace(/[\s,;.]+$/g, ''))
+    .filter((item) => {
+      if (!item) return false;
+      const key = normalize(item);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   if (!clean.length) return fallback;
   if (clean.length === 1) return clean[0];
   return `${clean.slice(0, -1).join(', ')} e ${clean.at(-1)}`;
 }
 
 function limitText(value, max) {
-  const clean = text(value).replace(/\s+/g, ' ');
+  const clean = text(value)
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n');
   if (!max || clean.length <= max) return clean;
   const shortened = clean.slice(0, max - 1);
+  const sentenceEnd = Math.max(shortened.lastIndexOf('.'), shortened.lastIndexOf('!'), shortened.lastIndexOf('?'));
+  if (sentenceEnd >= Math.floor(max * 0.62)) return shortened.slice(0, sentenceEnd + 1).trim();
   const lastSpace = shortened.lastIndexOf(' ');
   return `${shortened.slice(0, lastSpace > 120 ? lastSpace : max - 1).trim()}…`;
+}
+
+function fitPitchParts(parts, max) {
+  let result = '';
+  parts.map(text).filter(Boolean).forEach((part) => {
+    const cleanPart = part.replace(/\s+/g, ' ').trim();
+    const candidate = [result, cleanPart].filter(Boolean).join(' ');
+    if (!max || candidate.length <= max) result = candidate;
+  });
+  return result || limitText(parts.find((part) => text(part)) || '', max);
+}
+
+function parseMetricNumber(value) {
+  const raw = normalize(value).replace(/\s+/g, '');
+  const match = raw.match(/(\d+(?:[.,]\d+)?)(milhao|milhoes|mil|mi|k|m)?/);
+  if (!match) return 0;
+
+  const suffix = match[2] || '';
+  const numeric = suffix
+    ? Number(match[1].replace(',', '.'))
+    : Number(match[1].replace(/[.,]/g, ''));
+  if (!Number.isFinite(numeric)) return 0;
+  if (['milhao', 'milhoes', 'mi', 'm'].includes(suffix)) return numeric * 1000000;
+  if (['k', 'mil'].includes(suffix)) return numeric * 1000;
+  return numeric;
+}
+
+function formatMetricNumber(value, language = 'pt') {
+  const locale = language === 'en' ? 'en-US' : 'pt-BR';
+  if (value >= 1000000) {
+    const amount = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value / 1000000);
+    if (language === 'en') return `${amount}M`;
+    return `${amount} ${value < 2000000 ? 'milhão' : 'milhões'}`;
+  }
+  if (value >= 1000) {
+    const amount = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value / 1000);
+    return language === 'en' ? `${amount}K` : `${amount} mil`;
+  }
+  return new Intl.NumberFormat(locale).format(value);
+}
+
+function getCredibleMetrics(context, language = 'pt') {
+  const definitions = [
+    { key: 'totalStreams', minimum: 10000, pt: 'streams acumulados', en: 'total streams' },
+    { key: 'monthlyListeners', minimum: 5000, pt: 'ouvintes mensais', en: 'monthly listeners' },
+    { key: 'spotifyFollowers', minimum: 5000, pt: 'seguidores no Spotify', en: 'Spotify followers' },
+    { key: 'instagramFollowers', minimum: 10000, pt: 'seguidores no Instagram', en: 'Instagram followers' },
+    { key: 'tiktokFollowers', minimum: 10000, pt: 'seguidores no TikTok', en: 'TikTok followers' },
+  ];
+
+  return definitions
+    .map((definition) => {
+      const value = parseMetricNumber(context[definition.key]);
+      return {
+        ...definition,
+        value,
+        strength: value / definition.minimum,
+      };
+    })
+    .filter((metric) => metric.value >= metric.minimum)
+    .sort((a, b) => b.strength - a.strength)
+    .map((metric) => `${formatMetricNumber(metric.value, language)} ${metric[language]}`);
 }
 
 export function getPitchKey(artistId, releaseId) {
@@ -255,12 +331,16 @@ export function resolvePitchLanguage(context, requestedLanguage = 'auto') {
 }
 
 function buildHighlightsPt(context) {
-  const items = [];
-  if (context.totalStreams) items.push(`${context.totalStreams} streams informados`);
-  if (context.monthlyListeners) items.push(`${context.monthlyListeners} ouvintes mensais`);
-  if (context.spotifyFollowers) items.push(`${context.spotifyFollowers} seguidores no Spotify`);
+  const items = getCredibleMetrics(context, 'pt').slice(0, 2);
   if (context.achievements) items.push(context.achievements);
   if (context.collaborations) items.push(`colaborações: ${context.collaborations}`);
+  return items.slice(0, 3);
+}
+
+function buildHighlightsEn(context) {
+  const items = getCredibleMetrics(context, 'en').slice(0, 2);
+  if (context.achievements) items.push(context.achievements);
+  if (context.collaborations) items.push(`collaborations: ${context.collaborations}`);
   return items.slice(0, 3);
 }
 
@@ -278,15 +358,33 @@ function buildPromotionPt(context) {
 }
 
 function buildIntroPt(context) {
-  const genreMood = sentenceJoin([context.releaseGenre, context.releaseSubgenre, context.mood], 'identidade musical em desenvolvimento');
+  const subgenreIncludesGenre = context.releaseGenre && context.releaseSubgenre
+    && normalize(context.releaseSubgenre).includes(normalize(context.releaseGenre));
+  const genre = sentenceJoin(
+    subgenreIncludesGenre ? [context.releaseSubgenre] : [context.releaseGenre, context.releaseSubgenre],
+    'identidade musical em desenvolvimento',
+  );
+  const atmosphere = [
+    context.mood ? `mood ${context.mood}` : '',
+    context.energy ? `energia ${context.energy}` : '',
+  ].filter(Boolean);
   const type = context.releaseType || 'lançamento';
-  return `${context.artistName} apresenta "${context.songTitle}", ${type.toLowerCase()} com ${genreMood}.`;
+  return `${context.artistName} apresenta "${context.songTitle}", ${type.toLowerCase()} de ${genre}${atmosphere.length ? ` com ${sentenceJoin(atmosphere)}` : ''}.`;
 }
 
 function buildIntroEn(context) {
-  const genreMood = sentenceJoin([context.releaseGenre, context.releaseSubgenre, context.mood], 'a developing musical identity');
+  const subgenreIncludesGenre = context.releaseGenre && context.releaseSubgenre
+    && normalize(context.releaseSubgenre).includes(normalize(context.releaseGenre));
+  const genre = sentenceJoin(
+    subgenreIncludesGenre ? [context.releaseSubgenre] : [context.releaseGenre, context.releaseSubgenre],
+    'a developing musical identity',
+  );
+  const atmosphere = [
+    context.mood ? `${context.mood} mood` : '',
+    context.energy ? `${context.energy} energy` : '',
+  ].filter(Boolean);
   const type = context.releaseType || 'release';
-  return `${context.artistName} presents "${context.songTitle}", a ${type.toLowerCase()} shaped by ${genreMood}.`;
+  return `${context.artistName} presents "${context.songTitle}", a ${type.toLowerCase()} shaped by ${genre}${atmosphere.length ? ` with ${sentenceJoin(atmosphere)}` : ''}.`;
 }
 
 function buildPromotionEn(context) {
@@ -312,6 +410,7 @@ export function generatePitch({ type = 'spotify', context, playlists = [], langu
   const promoPt = buildPromotionPt(context);
   const promoEn = buildPromotionEn(context);
   const highlights = buildHighlightsPt(context);
+  const highlightsEn = buildHighlightsEn(context);
   const relevantLinks = [context.musicLink, context.presaveLink, context.youtubeLink].filter(Boolean);
 
   let title = pitchType.label;
@@ -324,16 +423,20 @@ export function generatePitch({ type = 'spotify', context, playlists = [], langu
       : 'The pitch can focus on short-form content, social storytelling and playlist outreach once the rollout is confirmed.';
 
     if (type === 'curator') {
-      body = `Hi, hope you are well. I would like to share "${context.songTitle}", the new release by ${context.artistName}. The track fits ${context.releaseGenre || 'the playlist mood'}${context.mood ? ` with a ${context.mood} mood` : ''}. ${promo} Link: ${context.musicLink || context.presaveLink || ''}`;
+      body = `Hi, hope you are well. I would like to share "${context.songTitle}", the new release by ${context.artistName}. The track fits ${context.releaseGenre || 'the playlist mood'}${context.mood ? ` with a ${context.mood} mood` : ''}. ${promo}${context.musicLink || context.presaveLink ? ` Link: ${context.musicLink || context.presaveLink}` : ''}`;
     } else if (type === 'email') {
       title = `Email: ${context.artistName} - ${context.songTitle}`;
       body = `Subject: ${context.artistName} - "${context.songTitle}" for consideration\n\nHi,\n\n${intro} ${context.description || context.narrative || ''}\n\n${promo}\n\n${playlistNames ? `Compatible playlist references: ${playlistNames}.` : ''}\n\nLink: ${context.musicLink || context.presaveLink || ''}\n\nBest,\n${context.artistName}`;
     } else if (type === 'short') {
-      body = `${intro} ${promo}`;
+      body = fitPitchParts([intro, promo], pitchType.max);
     } else if (type === 'campaign') {
       body = `${intro}\n\nArtist: ${context.shortBio || context.archetypes || context.editorialLines || 'Emerging project with active identity development.'}\n\nSong: ${context.description || context.narrative || context.lyricTheme || 'Release focused on mood, audience fit and digital rollout.'}\n\nPromotion: ${promo}\n\nTarget audience: ${context.targetAudience || 'Listeners aligned with the genre, mood and visual identity.'}\n\nPlaylist references: ${playlistNames || 'to be refined by genre and mood'}.\n\nLinks: ${relevantLinks.join(' | ')}`;
     } else {
-      body = `${intro} ${promo} ${playlistNames ? `Compatible playlist references include ${playlistNames}.` : ''}`;
+      const credibility = highlightsEn.length ? `Backed by ${sentenceJoin(highlightsEn.slice(0, 2))}.` : '';
+      body = fitPitchParts(
+        [credibility, intro, promo, playlistNames ? `Compatible playlist references include ${playlistNames}.` : ''],
+        pitchType.max,
+      );
     }
   } else {
     const intro = buildIntroPt(context);
@@ -342,18 +445,35 @@ export function generatePitch({ type = 'spotify', context, playlists = [], langu
       : 'O pitch pode focar em vídeos curtos, stories, narrativa visual e contato com curadores quando o plano for confirmado.';
 
     if (type === 'spotify') {
-      body = `${highlights.length ? `Com ${sentenceJoin(highlights)}, ` : ''}${intro} ${promo} ${playlistNames ? `Playlists como ${playlistNames} são referências compatíveis.` : ''}`;
+      const credibility = highlights.length ? `Com ${sentenceJoin(highlights.slice(0, 2))}, ${intro}` : intro;
+      const concisePromotion = promoPt.length
+        ? `A divulgação contará com ${sentenceJoin(promoPt.slice(0, 3).map((item) => limitText(item, 90)))}.`
+        : promo;
+      body = fitPitchParts(
+        [credibility, concisePromotion, playlistNames ? `Playlists como ${playlistNames} são referências compatíveis.` : ''],
+        pitchType.max,
+      );
     } else if (type === 'distributor') {
-      body = `${intro} ${context.description || context.narrative || ''} ${promo} ${context.targetAudience ? `Público-alvo: ${context.targetAudience}.` : ''} ${playlistNames ? `Playlists-alvo: ${playlistNames}.` : ''} ${relevantLinks.length ? `Links: ${relevantLinks.join(' | ')}` : ''}`;
+      body = fitPitchParts(
+        [
+          intro,
+          limitText(context.description || context.narrative || '', 240),
+          promo,
+          context.targetAudience ? `Público-alvo: ${context.targetAudience}.` : '',
+          playlistNames ? `Playlists-alvo: ${playlistNames}.` : '',
+          relevantLinks.length ? `Links: ${relevantLinks.join(' | ')}` : '',
+        ],
+        pitchType.max,
+      );
     } else if (type === 'curator') {
-      body = `Olá! Tudo bem? Gostaria de apresentar "${context.songTitle}", novo lançamento de ${context.artistName}. A faixa combina com ${context.releaseGenre || 'a proposta da playlist'}${context.mood ? ` e tem mood ${context.mood}` : ''}. Acredito que pode funcionar na playlist pela identidade sonora e pelo plano de divulgação. ${promo} Link: ${context.musicLink || context.presaveLink || ''}`;
+      body = `Olá! Tudo bem? Gostaria de apresentar "${context.songTitle}", novo lançamento de ${context.artistName}. A faixa combina com ${context.releaseGenre || 'a proposta da playlist'}${context.mood ? ` e tem mood ${context.mood}` : ''}. Acredito que pode funcionar na playlist pela identidade sonora e pelo plano de divulgação. ${promo}${context.musicLink || context.presaveLink ? ` Link: ${context.musicLink || context.presaveLink}` : ''}`;
     } else if (type === 'blog') {
       body = `${context.artistName} lança "${context.songTitle}", ${context.releaseType.toLowerCase()} que mistura ${sentenceJoin([context.releaseGenre, context.mood, context.narrative], 'gênero, mood e narrativa do artista')}. ${context.description || ''} ${promo}`;
     } else if (type === 'email') {
       title = `E-mail: ${context.artistName} - ${context.songTitle}`;
       body = `Assunto: ${context.artistName} - "${context.songTitle}" para avaliação\n\nOlá, tudo bem?\n\nGostaria de apresentar "${context.songTitle}", novo lançamento de ${context.artistName}.\n\n${intro} ${context.description || context.narrative || ''}\n\n${promo}\n\n${playlistNames ? `Referências de playlists compatíveis: ${playlistNames}.` : ''}\n\nLink: ${context.musicLink || context.presaveLink || ''}\n\nObrigado pela atenção,\n${context.artistName}`;
     } else if (type === 'short') {
-      body = `${intro} ${promo}`;
+      body = fitPitchParts([intro, promo], pitchType.max);
     } else if (type === 'campaign') {
       body = `Resumo do artista: ${context.shortBio || context.archetypes || context.editorialLines || 'Projeto em desenvolvimento com identidade própria.'}\n\nResumo da música: ${intro} ${context.description || context.narrative || context.lyricTheme || ''}\n\nMood/gênero: ${sentenceJoin([context.releaseGenre, context.releaseSubgenre, context.mood, context.energy], 'adicione gênero e mood para fortalecer o pitch')}.\n\nPúblico-alvo: ${context.targetAudience || 'definir público-alvo na aba Pitching'}.\n\nEstratégia de divulgação: ${promo}\n\nPlaylists indicadas: ${playlistNames || 'gerar a partir de gênero, mood e energia'}.\n\nLinks importantes: ${relevantLinks.join(' | ') || 'adicione link da música, pré-save ou press kit'}.`;
     }
@@ -425,7 +545,7 @@ export function scorePitchQuality(context, draft) {
     { ok: buildPromotionPt(context).length > 0, points: 18, strong: 'plano de divulgação citado', improve: 'incluir plano de divulgação, redes, fãs ou curadores' },
     { ok: Boolean(context.musicLink || context.presaveLink || context.youtubeLink), points: 12, strong: 'links importantes disponíveis', improve: 'adicionar link da música, pré-save ou YouTube' },
     { ok: Boolean(context.targetAudience), points: 10, strong: 'público-alvo informado', improve: 'definir público-alvo' },
-    { ok: Boolean(context.totalStreams || context.monthlyListeners || context.achievements || context.previousPlaylists), points: 10, strong: 'dados relevantes usados com base', improve: 'adicionar dados reais do artista, se existirem' },
+    { ok: Boolean(getCredibleMetrics(context).length || context.achievements || context.previousPlaylists), points: 10, strong: 'dados relevantes usados com base', improve: 'adicionar métricas fortes ou conquistas realmente relevantes' },
     { ok: textValue.length <= max, points: 12, strong: 'dentro do limite de caracteres', improve: 'encurtar para o limite do formato' },
     { ok: textValue.length > 80 && textValue.length <= max, points: 8, strong: 'texto objetivo', improve: 'deixar o texto mais objetivo e completo' },
     { ok: !hypeWords.some((word) => normalize(textValue).includes(normalize(word))), points: 6, strong: 'sem promessa exagerada', improve: 'remover promessas exageradas' },

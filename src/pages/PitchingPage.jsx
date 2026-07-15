@@ -148,9 +148,20 @@ function PitchCard({ draft, score, copied, saved, onCopy, onChange, onSave, onRe
           <span className="eyebrow">{draft?.language === 'en' ? 'Inglês' : 'Português'}</span>
           <h3>{draft?.title || 'Pitch salvo'}</h3>
         </div>
-        <StatusBadge tone={withinLimit ? 'mint' : 'red'}>
-          {count}/{characterLimit || 'sem limite'}
-        </StatusBadge>
+        <div className="pitch-card-head-actions">
+          <StatusBadge tone={withinLimit ? 'mint' : 'red'}>
+            {count}/{characterLimit || 'sem limite'}
+          </StatusBadge>
+          <button
+            aria-label={`Copiar ${draft?.title || 'pitch'}`}
+            className="secondary-button compact pitch-copy-button"
+            onClick={() => onCopy(textValue, draft.id)}
+            type="button"
+          >
+            <Copy size={14} />
+            <span>{copied === draft.id ? 'Copiado' : 'Copiar texto'}</span>
+          </button>
+        </div>
       </div>
 
       {editing ? (
@@ -161,16 +172,20 @@ function PitchCard({ draft, score, copied, saved, onCopy, onChange, onSave, onRe
           rows={8}
         />
       ) : (
-        <div className="pitch-text-preview">{textValue || 'Sem texto salvo nesta versao.'}</div>
+        <div
+          aria-label={`Texto de ${draft?.title || 'pitch'}`}
+          aria-readonly="true"
+          className="pitch-text-preview"
+          role="textbox"
+          tabIndex="0"
+        >
+          {textValue || 'Sem texto salvo nesta versão.'}
+        </div>
       )}
 
       <ScoreBox score={score} />
 
       <div className="pitch-card-actions">
-        <button className="secondary-button compact" onClick={() => onCopy(textValue, draft.id)} type="button">
-          <Copy size={14} />
-          <span>{copied === draft.id ? 'Copiado' : 'Copiar'}</span>
-        </button>
         <button className="secondary-button compact" onClick={() => setEditing((value) => !value)} type="button">
           <Edit3 size={14} />
           <span>{editing ? 'Concluir edição' : 'Editar'}</span>

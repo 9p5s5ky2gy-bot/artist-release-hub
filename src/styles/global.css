@@ -154,7 +154,7 @@ img {
 }
 
 .main-area {
-  width: 100%;
+  width: calc(100% - 292px);
   min-width: 0;
   margin-left: 292px;
   padding: 34px;
@@ -1780,6 +1780,7 @@ textarea:focus {
 
 @media (max-width: 1180px) {
   .main-area {
+    width: 100%;
     margin-left: 0;
     padding: 82px 18px 24px;
   }
@@ -3009,7 +3010,7 @@ textarea:focus {
 
 .pitch-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -3029,6 +3030,14 @@ textarea:focus {
   gap: 14px;
 }
 
+.pitch-card-head-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .pitch-card h3 {
   margin: 0;
   font-size: 1.08rem;
@@ -3046,6 +3055,20 @@ textarea:focus {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   padding: 14px;
+}
+
+.pitch-text-preview {
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.pitch-text-preview:focus-visible {
+  outline: 2px solid rgba(101, 230, 173, 0.6);
+  outline-offset: 2px;
 }
 
 .pitch-editor {
@@ -3098,6 +3121,11 @@ textarea:focus {
   .playlist-suggestion-card > div {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .pitch-card-head-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .pitch-card-actions .primary-button,
