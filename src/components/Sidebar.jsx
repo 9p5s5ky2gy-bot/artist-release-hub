@@ -33,7 +33,6 @@ const navigationGroups = [
       { id: 'releases', label: 'Lançamentos', icon: Disc3 },
       { id: 'artistView', label: 'Visão do Artista', icon: Eye },
       { id: 'pitching', label: 'Pitching', icon: Send },
-      { id: 'briefings', label: 'Briefings', icon: CheckSquare },
       { id: 'finance', label: 'Financeiro', icon: BadgeCheck },
       { id: 'compare', label: 'Comparar', icon: LayoutDashboard },
       { id: 'reports', label: 'Relatorios', icon: Link2 },
