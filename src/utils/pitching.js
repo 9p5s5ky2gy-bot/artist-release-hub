@@ -433,7 +433,7 @@ function collectSpotifyMarketingActions(context) {
   return unique.slice(0, 8);
 }
 
-function buildSpotifyPitchPt(context, highlights) {
+function buildSpotifyPitchPt(context, highlights, playlistNames) {
   const strongestHighlight = highlights[0];
   let opening = `${strongestHighlight ? `Com ${strongestHighlight}, ` : ''}${buildIntroPt(context)}`;
   if (opening.length > 225) {
@@ -443,7 +443,8 @@ function buildSpotifyPitchPt(context, highlights) {
 
   const actions = collectSpotifyMarketingActions(context);
   const selected = [];
-  const available = 500 - opening.length - 1;
+  const playlistClause = `Playlists-alvo: ${playlistNames}.`;
+  const available = 500 - opening.length - playlistClause.length - 2;
 
   actions.forEach((action) => {
     const candidate = `A campanha prioriza ${sentenceJoin([...selected, action])}.`;
@@ -453,14 +454,33 @@ function buildSpotifyPitchPt(context, highlights) {
   const marketing = selected.length
     ? `A campanha prioriza ${sentenceJoin(selected)}.`
     : limitText(`A campanha prioriza ${actions[0]}.`, available);
-  let result = `${opening} ${marketing}`.trim();
+  let result = `${opening} ${marketing} ${playlistClause}`.trim();
 
   if (context.targetAudience && result.length < 430) {
     const audience = `Conteúdo direcionado a ${compactMarketingClause(context.targetAudience, 85)}.`;
-    if (`${result} ${audience}`.length <= 500) result = `${result} ${audience}`;
+    const withAudience = `${opening} ${marketing} ${audience} ${playlistClause}`;
+    if (withAudience.length <= 500) result = withAudience;
   }
 
   return limitText(result, 500);
+}
+
+function buildSpotifyPitchEn(context, highlights, playlistNames) {
+  const strongestHighlight = highlights[0];
+  let opening = `${strongestHighlight ? `Backed by ${strongestHighlight}. ` : ''}${buildIntroEn(context)}`;
+  if (opening.length > 225) {
+    opening = `${context.artistName} presents "${context.songTitle}", a ${(context.releaseType || 'release').toLowerCase()} shaped by ${context.releaseSubgenre || context.releaseGenre || 'its musical identity'}${context.mood ? ` with a ${context.mood} mood` : ''}.`;
+  }
+
+  const playlistClause = `Target playlists: ${playlistNames}.`;
+  const promotionItems = buildPromotionEn(context);
+  const promotion = promotionItems.length
+    ? sentenceJoin(promotionItems)
+    : 'short-form videos, daily stories, fan engagement and curator outreach';
+  const available = 500 - opening.length - playlistClause.length - 2;
+  const marketing = limitText(`The campaign prioritizes ${promotion}.`, available);
+
+  return limitText(`${opening} ${marketing} ${playlistClause}`, 500);
 }
 
 function buildIntroPt(context) {
@@ -513,6 +533,7 @@ export function generatePitch({ type = 'spotify', context, playlists = [], langu
   const pitchType = pitchTypes.find((item) => item.id === type) || pitchTypes[0];
   const lang = resolvePitchLanguage(context, language);
   const playlistNames = getPlaylistNames(playlists);
+  const spotifyPlaylistNames = playlistNames || getPlaylistNames(suggestPlaylists(context));
   const promoPt = buildPromotionPt(context);
   const promoEn = buildPromotionEn(context);
   const highlights = buildHighlightsPt(context);
@@ -528,7 +549,9 @@ export function generatePitch({ type = 'spotify', context, playlists = [], langu
       ? `The rollout includes ${sentenceJoin(promoEn)}.`
       : 'The pitch can focus on short-form content, social storytelling and playlist outreach once the rollout is confirmed.';
 
-    if (type === 'curator') {
+    if (type === 'spotify') {
+      body = buildSpotifyPitchEn(context, highlightsEn, spotifyPlaylistNames);
+    } else if (type === 'curator') {
       body = `Hi, hope you are well. I would like to share "${context.songTitle}", the new release by ${context.artistName}. The track fits ${context.releaseGenre || 'the playlist mood'}${context.mood ? ` with a ${context.mood} mood` : ''}. ${promo}${context.musicLink || context.presaveLink ? ` Link: ${context.musicLink || context.presaveLink}` : ''}`;
     } else if (type === 'email') {
       title = `Email: ${context.artistName} - ${context.songTitle}`;
@@ -551,7 +574,7 @@ export function generatePitch({ type = 'spotify', context, playlists = [], langu
       : 'O pitch pode focar em vídeos curtos, stories, narrativa visual e contato com curadores quando o plano for confirmado.';
 
     if (type === 'spotify') {
-      body = buildSpotifyPitchPt(context, highlights);
+      body = buildSpotifyPitchPt(context, highlights, spotifyPlaylistNames);
     } else if (type === 'distributor') {
       body = fitPitchParts(
         [
