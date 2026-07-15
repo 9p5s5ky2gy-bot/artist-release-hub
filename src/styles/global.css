@@ -938,13 +938,18 @@ textarea:focus {
 }
 
 .artist-card {
-  display: grid;
+  display: flex;
+  min-height: 570px;
+  height: 100%;
+  flex-direction: column;
   gap: 14px;
   padding: 18px;
 }
 
 .artist-card-top {
   display: flex;
+  min-height: 60px;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
@@ -952,6 +957,229 @@ textarea:focus {
 .artist-card p {
   margin-top: 8px;
   color: var(--muted);
+}
+
+.artist-archetype-tags {
+  display: flex;
+  min-height: 28px;
+  max-height: 62px;
+  flex-wrap: wrap;
+  gap: 7px;
+  overflow: hidden;
+}
+
+.artist-archetype-tags span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(101, 230, 173, 0.22);
+  border-radius: 999px;
+  background: rgba(101, 230, 173, 0.08);
+  color: var(--mint);
+  padding: 5px 9px;
+  font-size: 0.76rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artist-card-meta {
+  min-height: 68px;
+  max-height: 68px;
+  overflow: hidden;
+}
+
+.artist-card-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artist-card-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted-2);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.artist-vibe-block {
+  min-height: 62px;
+}
+
+.artist-card .artist-vibe-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 6px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.artist-card-colors {
+  display: grid;
+  min-height: 48px;
+  gap: 8px;
+}
+
+.artist-card-colors .swatches {
+  max-height: 24px;
+  overflow: hidden;
+}
+
+.artist-card-colors .muted {
+  font-size: 0.82rem;
+}
+
+.artist-social-links {
+  min-height: 76px;
+  max-height: 76px;
+  align-content: flex-start;
+  overflow: hidden;
+}
+
+.artist-card-actions {
+  margin-top: auto;
+}
+
+.artist-card .artist-identity h2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.artist-identity-trigger {
+  flex-basis: 100%;
+}
+
+.artist-identity-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 24px;
+  background: rgba(4, 6, 9, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.artist-identity-modal {
+  width: min(940px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+.artist-identity-modal-header,
+.artist-identity-modal-person,
+.artist-identity-modal-actions,
+.artist-identity-section-title {
+  display: flex;
+  align-items: center;
+}
+
+.artist-identity-modal-header {
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.artist-identity-modal-person {
+  min-width: 0;
+  gap: 12px;
+}
+
+.artist-identity-modal-person > div:last-child {
+  min-width: 0;
+}
+
+.artist-identity-modal-person h2 {
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+.artist-identity-modal-person p {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.artist-identity-section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding-block: 18px;
+}
+
+.artist-identity-section {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 15px;
+}
+
+.artist-identity-section-title {
+  gap: 8px;
+  color: var(--mint);
+}
+
+.artist-identity-section-title h3 {
+  font-size: 0.92rem;
+}
+
+.artist-identity-section > p {
+  margin-top: 10px;
+  color: var(--muted);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.artist-identity-section .swatches {
+  margin-top: 12px;
+}
+
+.artist-identity-modal-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 640px) {
+  .artist-card {
+    min-height: 0;
+  }
+
+  .artist-identity-modal-backdrop {
+    align-items: start;
+    padding: 8px;
+  }
+
+  .artist-identity-modal {
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+    padding: 16px;
+  }
+
+  .artist-identity-section-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .artist-identity-modal-actions .primary-button,
+  .artist-identity-modal-actions .secondary-button {
+    width: 100%;
+  }
 }
 
 .swatches {
