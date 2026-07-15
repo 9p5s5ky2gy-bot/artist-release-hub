@@ -357,6 +357,112 @@ function buildPromotionPt(context) {
   return items;
 }
 
+const spotifyMarketingKeywords = [
+  'anuncio', 'audio', 'bastidor', 'bio', 'blog', 'caixinha', 'campanha', 'capa', 'chamada',
+  'clipe', 'coment', 'compartilh', 'conteudo', 'contador', 'contagem', 'corte', 'cta',
+  'curador', 'fa', 'foto', 'identificacao', 'influenciador', 'letra', 'link', 'live',
+  'midia', 'ouvir', 'performance', 'pergunta', 'playlist', 'post', 'pov', 'pre-save',
+  'reel', 'repost', 'salvar', 'short', 'story', 'superfa', 'teaser', 'tiktok', 'trafego',
+  'trend', 'video',
+];
+
+function compactMarketingClause(value, max = 92) {
+  const clean = text(value)
+    .replace(/^(a\s+)?divulga(?:ção|cao)\s+(terá|tera|contará com|contara com|inclui|prioriza)\s+/i, '')
+    .replace(/^campanha\s+(nas redes|de divulgação)?\s*:?\s*/i, '')
+    .replace(/^a(?:ções|coes)\s+com\s+f(?:ãs|as)\s*:?\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[,;:\-\s]+|[,;:\-\s]+$/g, '')
+    .trim();
+  const sentenceCase = clean
+    ? `${clean.charAt(0).toLocaleLowerCase('pt-BR')}${clean.slice(1)}`
+      .replace(/\btiktok\b/gi, 'TikTok')
+      .replace(/\breels\b/gi, 'Reels')
+      .replace(/\bshorts\b/gi, 'Shorts')
+    : '';
+  if (sentenceCase.length <= max) return sentenceCase;
+  const shortened = sentenceCase.slice(0, max + 1);
+  const lastSpace = shortened.lastIndexOf(' ');
+  return shortened.slice(0, lastSpace > 35 ? lastSpace : max).trim();
+}
+
+function collectSpotifyMarketingActions(context) {
+  const sources = [
+    { value: context.promotionPlan, weight: 3 },
+    { value: context.socialCampaign, weight: 3 },
+    { value: context.fanActions, weight: 2 },
+    { value: context.influencers ? `ações com influenciadores ${context.influencers}` : '', weight: 2 },
+    { value: context.blogs ? `contato com blogs e páginas ${context.blogs}` : '', weight: 2 },
+  ];
+  const candidates = [];
+  let order = 0;
+
+  sources.forEach(({ value, weight }) => {
+    text(value).split(/[\n.;]+|,\s*/).forEach((part) => {
+      const clause = compactMarketingClause(part);
+      if (clause.length < 5) return;
+      const normalized = normalize(clause);
+      const keywordScore = spotifyMarketingKeywords.filter((keyword) => normalized.includes(keyword)).length;
+      if (!keywordScore) return;
+      candidates.push({ clause, score: keywordScore * 4 + weight, order: order++ });
+    });
+  });
+
+  if (context.hasPresave) candidates.push({ clause: 'pré-save com chamadas e link nas redes', score: 12, order: order++ });
+  if (context.hasClip) candidates.push({ clause: 'cortes do clipe/visual para Reels, TikTok e Shorts', score: 12, order: order++ });
+  if (context.hasPaidTraffic) candidates.push({ clause: 'mídia paga segmentada para o público da faixa', score: 12, order: order++ });
+
+  const unique = [];
+  candidates
+    .sort((a, b) => b.score - a.score || a.order - b.order)
+    .forEach((candidate) => {
+      const key = normalize(candidate.clause);
+      if (unique.some((item) => normalize(item).includes(key) || key.includes(normalize(item)))) return;
+      unique.push(candidate.clause);
+    });
+
+  if (!unique.length) {
+    return [
+      'vídeos curtos para Reels e TikTok',
+      'stories com CTA para ouvir e salvar',
+      'conteúdos de bastidores e identificação',
+      'contato direto com curadores',
+    ];
+  }
+
+  return unique.slice(0, 8);
+}
+
+function buildSpotifyPitchPt(context, highlights) {
+  const strongestHighlight = highlights[0];
+  let opening = `${strongestHighlight ? `Com ${strongestHighlight}, ` : ''}${buildIntroPt(context)}`;
+  if (opening.length > 225) {
+    const shortGenre = context.releaseSubgenre || context.releaseGenre || 'identidade musical própria';
+    opening = `${strongestHighlight ? `Com ${strongestHighlight}, ` : ''}${context.artistName} apresenta "${context.songTitle}", ${(context.releaseType || 'lançamento').toLowerCase()} de ${compactMarketingClause(shortGenre, 80)}${context.mood ? ` com mood ${compactMarketingClause(context.mood, 50)}` : ''}.`;
+  }
+
+  const actions = collectSpotifyMarketingActions(context);
+  const selected = [];
+  const available = 500 - opening.length - 1;
+
+  actions.forEach((action) => {
+    const candidate = `A campanha prioriza ${sentenceJoin([...selected, action])}.`;
+    if (candidate.length <= available) selected.push(action);
+  });
+
+  const marketing = selected.length
+    ? `A campanha prioriza ${sentenceJoin(selected)}.`
+    : limitText(`A campanha prioriza ${actions[0]}.`, available);
+  let result = `${opening} ${marketing}`.trim();
+
+  if (context.targetAudience && result.length < 430) {
+    const audience = `Conteúdo direcionado a ${compactMarketingClause(context.targetAudience, 85)}.`;
+    if (`${result} ${audience}`.length <= 500) result = `${result} ${audience}`;
+  }
+
+  return limitText(result, 500);
+}
+
 function buildIntroPt(context) {
   const subgenreIncludesGenre = context.releaseGenre && context.releaseSubgenre
     && normalize(context.releaseSubgenre).includes(normalize(context.releaseGenre));
@@ -445,14 +551,7 @@ export function generatePitch({ type = 'spotify', context, playlists = [], langu
       : 'O pitch pode focar em vídeos curtos, stories, narrativa visual e contato com curadores quando o plano for confirmado.';
 
     if (type === 'spotify') {
-      const credibility = highlights.length ? `Com ${sentenceJoin(highlights.slice(0, 2))}, ${intro}` : intro;
-      const concisePromotion = promoPt.length
-        ? `A divulgação contará com ${sentenceJoin(promoPt.slice(0, 3).map((item) => limitText(item, 90)))}.`
-        : promo;
-      body = fitPitchParts(
-        [credibility, concisePromotion, playlistNames ? `Playlists como ${playlistNames} são referências compatíveis.` : ''],
-        pitchType.max,
-      );
+      body = buildSpotifyPitchPt(context, highlights);
     } else if (type === 'distributor') {
       body = fitPitchParts(
         [
