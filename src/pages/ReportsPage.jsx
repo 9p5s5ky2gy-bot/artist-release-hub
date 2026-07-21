@@ -4,7 +4,7 @@ import { CoverImage } from '../components/CoverImage';
 import { EmptyState } from '../components/EmptyState';
 import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
-import { generateClipBrandingReport, reportSectionsToText } from '../utils/clipBrandingReport';
+import { generateClipBrandingReport, reportSectionsToText, sanitizeClipBrandingReport } from '../utils/clipBrandingReport';
 import { createId } from '../utils/id';
 import { getPitchKey } from '../utils/pitching';
 import { generateReport, reportTypes } from '../utils/proModules';
@@ -133,8 +133,9 @@ export function ReportsPage({
 
   function openSavedReport(report) {
     if (dirty && !window.confirm('Abrir a versão salva e descartar as alterações não salvas do rascunho?')) return;
-    setType(report.type || 'complete');
-    setDraft({ ...report });
+    const preparedReport = sanitizeClipBrandingReport(report);
+    setType(preparedReport.type || 'complete');
+    setDraft({ ...preparedReport });
     setNotes(report.notes || '');
     setEditing(false);
     setDirty(false);
@@ -206,7 +207,7 @@ export function ReportsPage({
               </div>
               <article className="clip-filmmaker-summary">
                 <span className="eyebrow">Pronto para WhatsApp ou e-mail</span>
-                <h3>17. Resumo para envio ao filmmaker</h3>
+                <h3>{draft.sections.length + 1}. Resumo para envio ao filmmaker</h3>
                 {editing ? (
                   <textarea value={draft.summaryForFilmmaker || ''} onChange={(event) => updateSummary(event.target.value)} rows={12} />
                 ) : (
@@ -250,7 +251,7 @@ export function ReportsPage({
             <p className="muted-copy">Salvo em {new Date(item.updatedAt || item.createdAt).toLocaleString('pt-BR')}</p>
             <div className="pro-actions-row">
               <button className="secondary-button compact" onClick={() => openSavedReport(item)} type="button"><Eye size={14} />Abrir versão</button>
-              <button className="secondary-button compact" onClick={() => copyText(item.content, () => setCopied(item.id))} type="button"><Copy size={14} />{copied === item.id ? 'Copiado' : 'Copiar'}</button>
+              <button className="secondary-button compact" onClick={() => copyText(sanitizeClipBrandingReport(item).content, () => setCopied(item.id))} type="button"><Copy size={14} />{copied === item.id ? 'Copiado' : 'Copiar'}</button>
               <button className="secondary-button compact" onClick={printReport} type="button"><Printer size={14} />Imprimir</button>
             </div>
           </article>

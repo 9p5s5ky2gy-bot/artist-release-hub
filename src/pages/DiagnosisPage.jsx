@@ -1,9 +1,10 @@
-import { Activity, AlertTriangle, CalendarClock, CheckCircle2, FileText, RefreshCcw, Save, Settings2, Target } from 'lucide-react';
+import { Activity, AlertTriangle, CalendarClock, CheckCircle2, FileText, Instagram, MessageCircle, Music2, RefreshCcw, Save, Settings2, Target, Video } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import { PageHeader } from '../components/PageHeader';
 import { StatCard } from '../components/StatCard';
 import { StatusBadge } from '../components/StatusBadge';
+import { buildContentProductionSummary } from '../utils/contentProduction';
 import { deadlineDefinitions } from '../utils/deadlines';
 import { formatFullDate } from '../utils/date';
 import { analyzeRelease, buildDiagnosisSnapshot, formatCurrency } from '../utils/proModules';
@@ -29,6 +30,13 @@ const deadlineGroups = [
   { id: 'not_applicable', title: 'Não se aplica' },
   { id: 'no_date', title: 'Data pendente' },
 ];
+
+const productionIcons = {
+  videos: Video,
+  reels: Instagram,
+  tiktoks: Music2,
+  stories: MessageCircle,
+};
 
 function ReleaseSelectors({ artists, releases, artistId, releaseId, onArtist, onRelease }) {
   const artistReleases = releases.filter((release) => !artistId || release.artistId === artistId);
@@ -57,6 +65,7 @@ export function DiagnosisPage({ artists, releases, tasks, planDays, pitching, pi
   const [refreshKey, setRefreshKey] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsDraft, setSettingsDraft] = useState({});
+  const [productionView, setProductionView] = useState('summary');
 
   useEffect(() => {
     if (artists.length && !artists.some((artist) => artist.id === artistId)) setArtistId(artists[0].id);
@@ -72,6 +81,10 @@ export function DiagnosisPage({ artists, releases, tasks, planDays, pitching, pi
   const diagnosis = useMemo(
     () => analyzeRelease({ artist, release, planDays, tasks, pitching, pitchBriefs, pitchChecklists }),
     [artist, release, planDays, tasks, pitching, pitchBriefs, pitchChecklists, refreshKey],
+  );
+  const productionSummary = useMemo(
+    () => buildContentProductionSummary({ releaseId, planDays, tasks }),
+    [releaseId, planDays, tasks],
   );
 
   useEffect(() => {
@@ -132,6 +145,37 @@ export function DiagnosisPage({ artists, releases, tasks, planDays, pitching, pi
         <StatCard label="Dias concluídos" value={`${diagnosis.completedItems}/${diagnosis.progress.totalDays}`} icon={CheckCircle2} tone="yellow" />
         <StatCard label="Prazos atrasados" value={deadlineData?.counts?.overdue || 0} icon={AlertTriangle} tone={deadlineData?.counts?.overdue ? 'coral' : 'mint'} />
       </div>
+
+      <section className="panel content-production-section">
+        <div className="section-title-row">
+          <div><span className="eyebrow">Plano de gravação</span><h2>Conteúdos do cronograma</h2></div>
+          <StatusBadge>{productionSummary.total} gravação(ões)</StatusBadge>
+        </div>
+
+        <div className="content-production-tabs" role="tablist" aria-label="Visualização dos conteúdos do cronograma">
+          <button className={productionView === 'summary' ? 'active' : ''} onClick={() => setProductionView('summary')} role="tab" aria-selected={productionView === 'summary'} type="button">Resumo</button>
+          <button className={productionView === 'themes' ? 'active' : ''} onClick={() => setProductionView('themes')} role="tab" aria-selected={productionView === 'themes'} type="button">Temas das gravações</button>
+        </div>
+
+        {productionView === 'summary' ? (
+          <div className="content-production-summary">
+            {productionSummary.formats.map((format) => {
+              const Icon = productionIcons[format.id];
+              return <article className="content-production-stat" key={format.id}><div><Icon size={19} /></div><strong>{format.count}</strong><span>{format.label}</span></article>;
+            })}
+          </div>
+        ) : (
+          <div className="content-production-themes">
+            {productionSummary.formats.filter((format) => format.count > 0).map((format) => (
+              <article className="content-theme-group" key={format.id}>
+                <div className="content-theme-heading"><h3>{format.label}</h3><StatusBadge>{format.count}</StatusBadge></div>
+                <ol>{format.themes.map((theme, index) => <li key={`${theme.id}:${index}`}>{theme.title}</li>)}</ol>
+              </article>
+            ))}
+            {!productionSummary.total && <div className="content-production-empty">Este cronograma ainda não possui temas de gravação.</div>}
+          </div>
+        )}
+      </section>
 
       <section className="deadline-section">
         <div className="section-title-row">

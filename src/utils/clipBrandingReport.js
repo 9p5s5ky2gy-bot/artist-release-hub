@@ -4,6 +4,7 @@ import { buildPitchContext, getDefaultBrief, suggestPlaylists } from './pitching
 import { getReleaseCover, getReleaseType } from './release.js';
 
 const NOT_INFORMED = 'Não informado';
+const REMOVED_CLIP_REPORT_SECTIONS = new Set(['postproduction', 'derived_content', 'strategy_relation', 'checklist']);
 
 function text(value) {
   if (Array.isArray(value)) return value.filter(Boolean).join(', ');
@@ -123,6 +124,22 @@ export function reportSectionsToText(title, sections, summaryForFilmmaker = '') 
   return `${title}\n\n${body}${summaryForFilmmaker ? `\n\nRESUMO PARA FILMMAKER\n${summaryForFilmmaker}` : ''}`.trim();
 }
 
+export function sanitizeClipBrandingReport(report = {}) {
+  if (report.type !== 'clip_branding' || !Array.isArray(report.sections)) return report;
+  const sections = report.sections
+    .filter((section) => !REMOVED_CLIP_REPORT_SECTIONS.has(section.id))
+    .map((section, index) => ({
+      ...section,
+      title: `${index + 1}. ${String(section.title || '').replace(/^\d+\.\s*/, '')}`,
+    }));
+
+  return {
+    ...report,
+    sections,
+    content: reportSectionsToText(report.title, sections, report.summaryForFilmmaker),
+  };
+}
+
 export function generateClipBrandingReport({
   artist = {},
   release = {},
@@ -153,7 +170,6 @@ export function generateClipBrandingReport({
   const positioning = valueOrFallback(artist.positioning || artist.posicionamento || identity.flag);
   const differential = valueOrFallback(artist.differential || artist.diferencial || artist.description);
   const tone = valueOrFallback(artist.communicationTone || artist.tone || identity.vibe);
-  const campaignNarrative = valueOrFallback(release.promotionPlan || pitchContext.promotionPlan || strategy.phaseSummary);
   const clipActive = normalize(pitchContext.hasClip || release.hasClip) === 'true' || normalize(pitchBrief.hasClip) === 'sim' || Boolean(release.clipDate);
   const pitchHighlights = uniqueValues([
     spotifyPitch?.text,
@@ -163,7 +179,6 @@ export function generateClipBrandingReport({
   ], 4);
   const archetypeDirection = getArchetypeDirection(identity.archetypes);
   const moodDirection = getMoodDirection({ mood, energy, genre, vibe: identity.vibe });
-  const clipStrategyActions = strategy.clipActions.map((action) => `${action.date || ''} ${action.title || action.description || ''}`.trim());
   const releaseDate = release.releaseDate ? formatFullDate(release.releaseDate) : NOT_INFORMED;
   const clipDate = release.clipDate ? formatFullDate(release.clipDate) : NOT_INFORMED;
 
@@ -209,43 +224,23 @@ export function generateClipBrandingReport({
       content: `${field('Direção cadastrada', release.photographyDirection)}\n${field('Iluminação', release.lighting)}\n${field('Cores de luz', release.lightColors || identity.colors)}\n${field('Período', release.shootingPeriod)}\n${field('Lentes/sensação', release.lensDirection)}\n${field('Textura/grão', release.imageTexture)}\n${field('Referência de cor', release.colorReference)}\n\nSugestão baseada no mood e na energia:\n${moodDirection}\n- Cobrir cada cena essencial em close-up, plano médio e plano aberto.\n- Definir antes da diária quando usar câmera estável e quando usar câmera de mão.\n- Fazer teste de luz, pele, figurino e cenário antes da primeira cena principal.`,
     },
     {
-      id: 'postproduction',
-      title: '9. Edição e pós-produção',
-      content: `${field('Ritmo de corte cadastrado', release.editingRhythm)}\n${field('Efeitos', release.effects)}\n${field('Color grading', release.colorGrading || identity.colors)}\n${field('Legendas na tela', release.onScreenText)}\n\nEntregáveis sugeridos para validar com a equipe:\n- Corte principal horizontal.\n- Teaser vertical e trailer curto.\n- Cortes 9:16 para Reels, TikTok e Shorts.\n- Making of e loop visual.\n- Thumbnail sem texto cortado.\n- Versão com legendas, quando fizer sentido.\n- Slow motion, speed ramp e glitches apenas quando reforçarem o mood ou a narrativa.\n- Marcar na timeline os momentos de impacto que também virarão conteúdo curto.`,
-    },
-    {
-      id: 'derived_content',
-      title: '10. Conteúdos derivados do clipe',
-      content: `Teaser 1 | Formato: 9:16 | Duração: 6–10s | Objetivo: curiosidade | CTA: acompanhe a estreia | Fase: pré-lançamento.\nTeaser 2 | Formato: 9:16 | Duração: 10–15s | Objetivo: revelar estética/trecho | CTA: ative o lembrete | Fase: semana final.\nTrecho Reels/TikTok | Formato: 9:16 | Duração: 12–25s | Objetivo: retenção e uso do áudio | CTA: salve/compartilhe | Fase: lançamento e pós.\nBastidor/making of | Formato: 9:16 | Duração: 15–45s | Objetivo: proximidade | CTA: comente sua cena favorita | Fase: aquecimento e pós.\nFoto/capa de post | Formato: 4:5 ou 1:1 | Objetivo: anúncio visual | CTA: ouça/assista | Fase: lançamento.\nPerformance vertical | Formato: 9:16 | Duração: 15–30s | Objetivo: apresentar o artista | CTA: use o áudio | Fase: pós-lançamento.\nFrase forte | Formato: vídeo com texto | Duração: 7–15s | Objetivo: identificação | CTA: envie para alguém | Fase: pré e pós.\nContagem regressiva | Formato: story | Duração: 5–10s | Objetivo: lembrete | CTA: ative o lembrete | Fase: semana final.\nEstreia/feedback/números | Formato: post e stories | Objetivo: prova social | CTA: assistir, comentar e compartilhar | Fase: lançamento e pós.`,
-    },
-    {
-      id: 'strategy_relation',
-      title: '11. Relação com a estratégia de lançamento',
-      content: `${field('Fases encontradas', strategy.phases.join(', '))}\n${field('Narrativa da campanha', campaignNarrative)}\n${field('Quando o clipe entra', release.clipDate ? formatFullDate(release.clipDate) : 'Não informado; decidir se estreia no lançamento ou no pós-lançamento')}\n${field('CTAs cadastrados', strategy.ctas.join(' | '))}\n${field('Métricas cadastradas', strategy.metrics.join(' | '))}\n${field('Dicas existentes', strategy.tips.join(' | '))}\n${field('Arquétipos usados nas ações', strategy.archetypes.join(', '))}\n\nTarefas conectadas ao audiovisual:\n${lines(clipStrategyActions)}\n\nUsar o clipe como fonte de cortes durante o pós-lançamento, preservando cenas fortes para manter a música viva sem publicar todo o material de uma vez.`,
-    },
-    {
       id: 'pitch_relation',
-      title: '12. Relação com pitching',
+      title: '9. Relação com pitching',
       content: `${field('Pitch Spotify', spotifyPitch?.text)}\n${field('Pitch distribuidora', distributorPitch?.text)}\n${field('Pitch curador', curatorPitch?.text)}\n${field('Pitch blog/release', blogPitch?.text)}\n${field('Pitch em português', portuguesePitch?.text)}\n${field('Pitch em inglês', englishPitch?.text)}\n${field('Playlists compatíveis', playlists.join(', '))}\n\nO clipe deve materializar visualmente gênero, mood, narrativa e público citados nos pitches. Imagens fortes, stills e bastidores também podem apoiar release para blogs, apresentação a curadores e campanha nas redes. Não tratar as playlists listadas como garantia de entrada.`,
     },
     {
       id: 'audience',
-      title: '13. Público-alvo e reação desejada',
+      title: '10. Público-alvo e reação desejada',
       content: `${field('Público-alvo', targetAudience)}\n${field('Superfãs/ações cadastradas', pitchContext.fanActions || release.fanActions)}\n${field('Emoção desejada', release.desiredEmotion || mood)}\n${field('Comentário desejado', release.desiredComment)}\n${field('Compartilhamento desejado', release.sharePrompt)}\n\nDiretriz sugerida: criar pelo menos um momento de identificação, um momento visual de impacto e um momento de performance que estimulem comentário, salvamento, compartilhamento e conversa por Direct sem prometer resultado.`,
     },
     {
-      id: 'checklist',
-      title: '14. Checklist para equipe do clipe',
-      content: `PRÉ-PRODUÇÃO\n[ ] Conceito definido\n[ ] Referências separadas\n[ ] Locação definida e autorizada\n[ ] Figurino, cabelo e maquiagem definidos\n[ ] Objetos de cena definidos\n[ ] Plano de gravação\n[ ] Cenas verticais e bastidores planejados\n[ ] Capa/thumbnail pensada\n[ ] Equipe confirmada\n\nGRAVAÇÃO\n[ ] Cenas principais e de performance\n[ ] Lifestyle e cenas simbólicas\n[ ] Close-ups e planos abertos\n[ ] Bastidores e fotos de divulgação\n[ ] Takes verticais, teasers e thumbnail\n\nPÓS-PRODUÇÃO\n[ ] Corte principal\n[ ] Teaser vertical e cortes para redes\n[ ] Making of e thumbnail\n[ ] Color grading e legendas\n[ ] Exportações e revisão final\n\nLANÇAMENTO\n[ ] Upload no YouTube\n[ ] Estreia e lembrete agendados\n[ ] Link salvo\n[ ] Posts, stories e cortes organizados`,
-    },
-    {
       id: 'risks',
-      title: '15. Riscos criativos',
+      title: '11. Riscos criativos',
       content: `- Clipe não combinar com o branding ou com os arquétipos cadastrados.\n- Estética genérica ou iluminação sem intenção.\n- Narrativa confusa ou excesso de informação visual.\n- Figurino, objetos ou locação fora da identidade.\n- Falta de cenas verticais, bastidores e material para pós-lançamento.\n- Clipe visualmente bonito, mas sem momentos reaproveitáveis nas redes.\n- Prometer no visual algo diferente do gênero, mood e campanha apresentados no pitch.`,
     },
     {
       id: 'recommendations',
-      title: '16. Recomendações finais',
+      title: '12. Recomendações finais',
       content: `- Priorizar cenas que também gerem cortes curtos para Reels, TikTok e Shorts.\n- Garantir pelo menos cinco momentos visualmente fortes e identificáveis.\n- Captar bastidores em vertical durante toda a diária.\n- Criar uma cena-símbolo ligada à narrativa real da música.\n- Gravar variações de performance em diferentes enquadramentos.\n- Evitar estética desconectada da identidade e dos arquétipos do artista.\n- Validar antes da gravação todos os campos marcados como "Não informado".`,
     },
   ];
