@@ -992,6 +992,7 @@ export default function App() {
         onSaveReport={saveReportVersion}
         onUpdateReport={updateReportVersion}
         onDeleteReport={deleteReportVersion}
+        onNavigate={setActivePage}
       />
     ),
     pitching: (

@@ -3748,11 +3748,75 @@ textarea:focus {
   height: 112px;
 }
 
+.clip-report-tags,
+.clip-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.clip-report-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.clip-report-section,
+.clip-filmmaker-summary {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 18px;
+  break-inside: avoid;
+}
+
+.clip-report-section:nth-child(1),
+.clip-report-section:nth-child(4),
+.clip-report-section:nth-child(10),
+.clip-report-section:nth-child(11),
+.clip-report-section:nth-child(12),
+.clip-report-section:nth-child(14) {
+  grid-column: 1 / -1;
+}
+
+.clip-report-section h3,
+.clip-filmmaker-summary h3 {
+  margin-bottom: 12px;
+  font-size: 1.05rem;
+}
+
+.clip-report-copy {
+  color: var(--muted);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.clip-report-section textarea,
+.clip-filmmaker-summary textarea {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.clip-filmmaker-summary {
+  border-color: rgba(101, 230, 173, 0.3);
+  background: rgba(101, 230, 173, 0.07);
+}
+
 @media (max-width: 1180px) {
   .pro-selector.multi,
   .pro-grid.three-columns,
-  .pro-grid.two-columns {
+  .pro-grid.two-columns,
+  .clip-report-sections {
     grid-template-columns: 1fr;
+  }
+
+  .clip-report-section {
+    grid-column: auto !important;
   }
 }
 
@@ -3779,6 +3843,11 @@ textarea:focus {
   .pro-modal-backdrop {
     align-items: start;
     padding: 10px;
+  }
+
+  .clip-report-section,
+  .clip-filmmaker-summary {
+    padding: 14px;
   }
 }
 
@@ -3810,5 +3879,36 @@ textarea:focus {
 
   .print-card {
     break-inside: avoid;
+  }
+
+  .clip-branding-report {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .clip-report-sections {
+    display: block !important;
+  }
+
+  .clip-report-section,
+  .clip-filmmaker-summary {
+    margin: 0 0 12px !important;
+    border: 1px solid #ddd !important;
+    background: #fff !important;
+    color: #111 !important;
+    break-inside: avoid-page;
+  }
+
+  .clip-report-copy,
+  .clip-report-section h3,
+  .clip-filmmaker-summary h3,
+  .report-cover-row p {
+    color: #111 !important;
+  }
+
+  .clip-report-tags {
+    display: none !important;
   }
 }

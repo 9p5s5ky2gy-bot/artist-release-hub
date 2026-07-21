@@ -21,6 +21,7 @@ export const briefingTypes = [
 
 export const reportTypes = [
   { id: 'complete', label: 'Relatorio completo' },
+  { id: 'clip_branding', label: 'Relatório de Branding para Clipe' },
   { id: 'client', label: 'Relatorio resumido para cliente' },
   { id: 'planning', label: 'Relatorio de planejamento' },
   { id: 'performance', label: 'Relatorio de desempenho' },
