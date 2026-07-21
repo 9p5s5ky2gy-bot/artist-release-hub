@@ -82,7 +82,7 @@ export function ReportsPage({
           pitching,
           pitchBrief: pitchBriefs?.[getPitchKey(artistId, releaseId)] || {},
         })
-      : generateReport({ type, artist, release, planDays, tasks, pitching, pitchChecklists });
+      : generateReport({ type, artist, release, planDays, tasks, pitching, pitchBriefs, pitchChecklists });
     setDraft({
       ...generated,
       id: createId('report-draft'),

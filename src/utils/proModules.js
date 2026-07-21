@@ -1,6 +1,7 @@
 ﻿
 import { addDays, diffInDays, formatDateInput, formatFullDate, formatHumanDate, todayInput } from './date';
 import { getPlanPhase, getReleaseProgress } from './calendar';
+import { applyDeadlineScorePenalties, buildReleaseDeadlineAlerts } from './deadlines';
 import { getReleaseCover, getReleaseType } from './release';
 import { buildPitchContext, getDefaultBrief, getPitchKey, scorePitchQuality, suggestPlaylists } from './pitching';
 
@@ -130,7 +131,7 @@ export function getDiagnosisStatus(score) {
   return 'Pronto para executar';
 }
 
-export function analyzeRelease({ artist = {}, release = {}, planDays = [], tasks = [], pitching = [], pitchChecklists = {} }) {
+export function analyzeRelease({ artist = {}, release = {}, planDays = [], tasks = [], pitching = [], pitchBriefs = {}, pitchChecklists = {} }) {
   const releaseDays = planDays.filter((day) => day.releaseId === release.id);
   const releaseTasks = tasks.filter((task) => task.releaseId === release.id);
   const progress = getReleaseProgress(release.id, planDays);
@@ -143,8 +144,10 @@ export function analyzeRelease({ artist = {}, release = {}, planDays = [], tasks
   const links = getReleaseLinks(artist, release);
   const futureOffset = release.releaseDate ? diffInDays(release.releaseDate, today) : 999;
   const hasPresave = hasValue(release.presaveLink) || normalizeText(release.presaveActive) === 'sim';
-  const hasClip = normalizeText(release.hasClip) === 'sim' || hasValue(release.clipDate) || getReleaseType(release) === 'Clipe';
-  const categories = {
+  const pitchBrief = pitchBriefs?.[getPitchKey(release.artistId, release.id)] || {};
+  const hasClip = normalizeText(release.hasClip || pitchBrief.hasClip) === 'sim' || hasValue(release.clipDate) || getReleaseType(release) === 'Clipe';
+  const deadlines = buildReleaseDeadlineAlerts({ artist, release, planDays, pitching, pitchChecklists, pitchBrief, today });
+  const baseCategories = {
     basics: scoreChecklist([{ ok: hasValue(release.songTitle) }, { ok: hasValue(release.artistId) }, { ok: hasValue(getReleaseType(release)) }, { ok: hasValue(release.releaseDate) }, { ok: hasValue(release.releaseGenre || release.genre || artist.genre) }, { ok: hasValue(release.mood) }, { ok: hasValue(release.narrative || release.description || release.notes) }, { ok: hasValue(getReleaseCover(release)) }, { ok: links.length >= 2 }]),
     strategy: scoreChecklist([{ ok: releaseDays.length >= 21 }, { ok: releaseTasks.length >= 21 }, { ok: countPhase(planDays, release.id, (day) => day.offset < 0) >= 10 }, { ok: countPhase(planDays, release.id, (day) => day.offset === 0) >= 1 }, { ok: countPhase(planDays, release.id, (day) => day.offset > 0) >= 5 }, { ok: release.planMode === 'random' || hasValue(release.randomPlanGeneratedAt) }]),
     content: scoreChecklist([{ ok: releaseTasks.some((task) => normalizeText(task.type).includes('post')) }, { ok: releaseTasks.some((task) => normalizeText(task.type).includes('story')) }, { ok: releaseTasks.some((task) => normalizeText(task.type).includes('reels') || normalizeText(task.type).includes('tiktok')) }, { ok: releaseTasks.some((task) => normalizeText(task.type).includes('bastidor')) }, { ok: releaseTasks.some((task) => normalizeText(task.description).includes('cta')) }]),
@@ -156,6 +159,7 @@ export function analyzeRelease({ artist = {}, release = {}, planDays = [], tasks
     postlaunch: scoreChecklist([{ ok: countPhase(planDays, release.id, (day) => day.offset > 0) >= 5 }, { ok: releaseTasks.some((task) => normalizeText(task.type).includes('pos')) }, { ok: releaseTasks.some((task) => normalizeText(task.title + task.description).includes('feedback')) }, { ok: releaseTasks.some((task) => normalizeText(task.title + task.description).includes('repost')) }]),
     budget: scoreChecklist([{ ok: finance.budget > 0 }, { ok: finance.expenses.length > 0 }, { ok: finance.expenses.some((item) => normalizeText(item.category).includes('trafego')) || hasValue(release.trafficBudget) }, { ok: finance.totalSpent <= finance.budget || finance.budget === 0 }]),
   };
+  const categories = applyDeadlineScorePenalties(baseCategories, deadlines.alerts);
   const weights = { basics: 1.1, strategy: 1.15, content: 1, pitching: 0.95, distribution: 0.9, engagement: 0.8, links: 0.8, execution: 1.15, postlaunch: 0.75, budget: 0.6 };
   const weightTotal = Object.values(weights).reduce((sum, value) => sum + value, 0);
   const score = clampScore(Object.entries(categories).reduce((sum, [key, value]) => sum + value * weights[key], 0) / weightTotal);
@@ -176,17 +180,25 @@ export function analyzeRelease({ artist = {}, release = {}, planDays = [], tasks
   if (categories.postlaunch < 55) warnings.push('Poucas acoes de pos-lancamento.');
   if (!finance.budget) warnings.push('Orcamento ainda nao definido.');
   if (hasClip && !release.clipDate && !release.youtubeLink) warnings.push('Clipe indicado, mas sem data ou link.');
+  deadlines.alerts.filter((alert) => alert.status === 'overdue').slice(0, 3).forEach((alert) => warnings.push(`Prazo atrasado: ${alert.label}.`));
   const addPriority = (condition, item) => { if (condition) priorities.push(item); };
   addPriority(!pitch, { title: 'Finalizar pitch principal', reason: 'O lancamento ainda nao possui pitch salvo.', impact: 'Melhora a apresentacao para plataformas e curadores.', priority: futureOffset <= 20 ? 'alta' : 'media', target: 'pitching' });
   addPriority(!hasValue(getReleaseCover(release)), { title: 'Cadastrar capa do lancamento', reason: 'A capa e material basico para posts, briefing e pitching.', impact: 'Aumenta clareza visual.', priority: 'alta', target: 'releases' });
   addPriority(overdueDays > 0, { title: 'Resolver dias atrasados', reason: 'Existem dias do plano sem conclusao.', impact: 'Recupera execucao.', priority: 'alta', target: 'generalCalendar' });
   addPriority(!finance.budget, { title: 'Definir orcamento do lancamento', reason: 'Sem orcamento fica dificil avaliar recursos.', impact: 'Ajuda a controlar gastos e retorno.', priority: 'media', target: 'finance' });
   addPriority(categories.postlaunch < 55, { title: 'Fortalecer pos-lancamento', reason: 'A campanha precisa manter a musica viva.', impact: 'Cria novas oportunidades de conteudo.', priority: 'media', target: 'calendar' });
-  return { score, status: getDiagnosisStatus(score), categoryScores: categories, strengths: strengths.length ? strengths : ['Base cadastrada para iniciar o plano.'], warnings: warnings.length ? warnings : ['Nenhum ponto critico encontrado.'], priorities: priorities.slice(0, 5), completedItems: progress.completedDays, missingItems: Math.max(progress.totalDays - progress.completedDays, 0), overdueDays, progress, finance, pitch, calculatedAt: new Date().toISOString() };
+  const deadlinePriorities = deadlines.alerts
+    .filter((alert) => ['overdue', 'attention'].includes(alert.status))
+    .slice(0, 3)
+    .map((alert) => ({ title: alert.label, reason: alert.daysLabel, impact: alert.action, priority: alert.priority, target: alert.target }));
+  const mergedPriorities = [...deadlinePriorities, ...priorities]
+    .filter((item, index, array) => array.findIndex((candidate) => candidate.title === item.title) === index)
+    .slice(0, 5);
+  return { score, status: getDiagnosisStatus(score), categoryScores: categories, strengths: strengths.length ? strengths : ['Base cadastrada para iniciar o plano.'], warnings: warnings.length ? warnings : ['Nenhum ponto critico encontrado.'], priorities: mergedPriorities, completedItems: progress.completedDays, missingItems: Math.max(progress.totalDays - progress.completedDays, 0), overdueDays, progress, finance, pitch, deadlines, calculatedAt: new Date().toISOString() };
 }
 
 export function buildDiagnosisSnapshot(diagnosis) {
-  return { score: diagnosis.score, status: diagnosis.status, categoryScores: diagnosis.categoryScores, strengths: diagnosis.strengths, warnings: diagnosis.warnings, priorities: diagnosis.priorities, calculatedAt: diagnosis.calculatedAt };
+  return { score: diagnosis.score, status: diagnosis.status, categoryScores: diagnosis.categoryScores, strengths: diagnosis.strengths, warnings: diagnosis.warnings, priorities: diagnosis.priorities, deadlineSummary: diagnosis.deadlines?.counts || {}, calculatedAt: diagnosis.calculatedAt };
 }
 export function buildGlobalEvents({ artists = [], releases = [], planDays = [], pitching = [], pitchChecklists = {} }) {
   const artistMap = new Map(artists.map((artist) => [artist.id, artist]));
@@ -267,8 +279,8 @@ export function compareReleaseMetrics({ releases = [], planDays = [], pitching =
   }
   return { rows, insights };
 }
-export function generateReport({ type, artist = {}, release = {}, planDays = [], tasks = [], pitching = [], pitchChecklists = {} }) {
-  const diagnosis = analyzeRelease({ artist, release, planDays, tasks, pitching, pitchChecklists });
+export function generateReport({ type, artist = {}, release = {}, planDays = [], tasks = [], pitching = [], pitchBriefs = {}, pitchChecklists = {} }) {
+  const diagnosis = analyzeRelease({ artist, release, planDays, tasks, pitching, pitchBriefs, pitchChecklists });
   const finance = summarizeFinance(release);
   const pitch = getPrimaryPitch({ pitching, artistId: release.artistId, releaseId: release.id });
   const releaseDays = planDays.filter((day) => day.releaseId === release.id);
