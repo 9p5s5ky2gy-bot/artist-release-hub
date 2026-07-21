@@ -137,12 +137,15 @@ export function DashboardPage({ artists, releases, planDays, onNavigate }) {
                 return (
                   <article className="release-mini" key={release.id}>
                     <CoverImage src={getReleaseCover(release)} alt={release.songTitle} />
-                    <div>
-                      <strong>{release.songTitle}</strong>
-                      <span>{artist?.stageName || 'Artista removido'}</span>
-                      <small>{formatFullDate(release.releaseDate)} · {progress.completedDays}/{progress.totalDays} dias</small>
+                    <div className="release-mini-copy">
+                      <strong className="release-mini-title">{release.songTitle}</strong>
+                      <span className="release-mini-artist">{artist?.stageName || 'Artista removido'}</span>
+                      <div className="release-mini-meta">
+                        <time dateTime={release.releaseDate}>{formatFullDate(release.releaseDate)}</time>
+                        <span>{progress.completedDays}/{progress.totalDays} dias concluídos</span>
+                      </div>
                     </div>
-                    <StatusBadge>{release.status}</StatusBadge>
+                    <StatusBadge>{release.status || 'planejamento'}</StatusBadge>
                   </article>
                 );
               })}
